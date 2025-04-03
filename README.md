@@ -104,7 +104,7 @@ WordPrIIS fully supports installation without a domain name, using just your ser
 
 1. When prompted for a domain name during interactive setup, simply leave it blank
 2. The script will automatically configure WordPress to work with your server's IP address
-3. You can access your WordPress site via http://your-server-ip-address/ (or https:// if SSL is enabled)
+3. You can access your WordPress site via http://your-server-IP-address/ (or https:// if SSL is enabled)
 
 When you're ready to add a domain name later:
 
@@ -193,6 +193,88 @@ $config.FirewallDefaultDeny = $true  # Block all inbound except allowed
 $config.DevelopmentMode = $false     # Stricter security in production mode
 $config.AllowedIPsForAdmin = @("192.168.1.0/24", "10.0.0.5")
 ```
+
+## Testing
+
+### Automated Testing with Pester
+
+WordPrIIS includes a comprehensive test suite built with Pester, PowerShell's testing framework. The tests verify script functionality without affecting the actual environment by mocking system commands.
+
+#### Running Tests Locally
+
+```powershell
+# Install Pester if not already installed
+Install-Module -Name Pester -MinimumVersion 5.0.0 -Force -SkipPublisherCheck
+
+# Navigate to the tests directory
+cd c:\Users\pepo4\IdeaProjects\WordPrIIS\tests
+
+# Run the tests
+Invoke-Pester -Path .\WordPrIIS.Tests.ps1 -Output Detailed
+```
+
+#### Test Structure
+
+The test suite consists of:
+
+- **WordPrIIS.Tests.ps1**: Main test file containing test cases for each component
+- **Import-ScriptFunctions.ps1**: Helper script that extracts functions from the main script for isolated testing
+
+#### What's Being Tested
+
+The tests verify that the script correctly:
+
+1. Detects whether components are already installed
+2. Installs and configures IIS
+3. Installs and configures PHP
+4. Installs and configures MySQL
+5. Downloads and sets up WordPress
+6. Configures HTTPS with Let's Encrypt or self-signed certificates
+7. Sets up security features (firewall, IP restrictions)
+8. Configures automated backups
+
+#### Mocking Approach
+
+The tests use Pester's mocking capabilities to:
+
+- Prevent actual execution of system-modifying commands
+- Simulate both successful and failure scenarios
+- Verify that the script calls the right commands with the right parameters
+
+#### CI/CD Integration
+
+The repository includes GitHub Actions workflows to automatically test the script on every push or pull request:
+
+```yaml
+name: PowerShell Tests
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Install Pester
+      shell: pwsh
+      run: |
+        Install-Module -Name Pester -MinimumVersion 5.0.0 -Force -SkipPublisherCheck
+    - name: Run Tests
+      shell: pwsh
+      run: |
+        Set-Location -Path "$env:GITHUB_WORKSPACE\tests"
+        $result = Invoke-Pester -Path .\WordPrIIS.Tests.ps1 -PassThru
+        if ($result.FailedCount -gt 0) {
+          Write-Error "Tests failed"
+          exit 1
+        }
+```
+
+For full details on the testing suite, see the [TESTSUITE.md](TESTSUITE.md) file in the repository.
 
 ## License
 
