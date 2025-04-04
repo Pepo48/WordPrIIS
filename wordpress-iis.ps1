@@ -128,11 +128,35 @@ if (-not $PSBoundParameters.ContainsKey('NonInteractive')) {
     if (-not [string]::IsNullOrWhiteSpace($domain)) { $config.Domain = $domain }
     
     if (-not [string]::IsNullOrWhiteSpace($config.Domain)) {
-        $config.UseHTTPS = Get-YesNoResponse -Prompt "Configure HTTPS with Let's Encrypt?" -Default $config.UseHTTPS
+        $config.UseHTTPS = Get-YesNoResponse -Prompt "Configure HTTPS?" -Default $config.UseHTTPS
         
         if ($config.UseHTTPS) {
-            $email = Read-Host -Prompt "Email address for Let's Encrypt [$($config.EmailAddress)]"
-            if (-not [string]::IsNullOrWhiteSpace($email)) { $config.EmailAddress = $email }
+            # Add certificate type options
+            "SSL Certificate Options:"
+            "1. Let's Encrypt (Recommended for production domains)"
+            "2. Self-signed certificate (For development only)"
+            "3. Cloudflare Origin Certificate (When using Cloudflare as proxy)"
+            
+            $certOption = "0"
+            while ($certOption -notin @("1", "2", "3")) {
+                $certOption = Read-Host -Prompt "Select certificate option (1-3)"
+            }
+            
+            $config.CertificateType = switch($certOption) {
+                "1" { "LetsEncrypt" }
+                "2" { "SelfSigned" }
+                "3" { "CloudflareOrigin" }
+            }
+            
+            # Only prompt for email if Let's Encrypt is selected
+            if ($config.CertificateType -eq "LetsEncrypt") {
+                $email = Read-Host -Prompt "Email address for Let's Encrypt [$($config.EmailAddress)]"
+                if (-not [string]::IsNullOrWhiteSpace($email)) { $config.EmailAddress = $email }
+            }
+            elseif ($config.CertificateType -eq "CloudflareOrigin") {
+                $config.CloudflareCertPath = Read-Host -Prompt "Path to Cloudflare Origin Certificate file (.pem)"
+                $config.CloudflareKeyPath = Read-Host -Prompt "Path to Cloudflare Private Key file (.key)"
+            }
         }
         
         if ($config.Domain -ne "localhost" -and $config.Domain -notmatch "^([\d]{1,3}\.){3}[\d]{1,3}$") {
@@ -514,9 +538,18 @@ and sets up HTTPS bindings in IIS.
 "`r`nSSL/HTTPS Configuration..."
 # Check if SSL configuration is required
 if ($config.UseHTTPS) {
-    # Check if win-acme (Let's Encrypt client) is already installed
+    # Initialize CertificateType if it wasn't set during interactive configuration
+    if (-not $config.ContainsKey('CertificateType')) {
+        $config.CertificateType = if ([string]::IsNullOrWhiteSpace($config.Domain) -or $config.Domain -eq "localhost") {
+            "SelfSigned"
+        } else {
+            "LetsEncrypt"
+        }
+    }
+    
+    # Check if win-acme (Let's Encrypt client) is already installed - only needed for Let's Encrypt
     $winAcmePath = "$env:ProgramData\win-acme"
-    if (-not (Test-ComponentInstalled -Name "win-acme" -TestScript {
+    if ($config.CertificateType -eq "LetsEncrypt" -and -not (Test-ComponentInstalled -Name "win-acme" -TestScript {
         Test-Path -Path "$winAcmePath\wacs.exe" -ErrorAction SilentlyContinue
     })) {
         "Installing win-acme (Let's Encrypt client) version $($config.WinAcmeVersion)..."
@@ -545,42 +578,114 @@ if ($config.UseHTTPS) {
 
     "Configuring SSL certificate for $domainName..."
     
-    # For production use with a real domain
-    if ($domainName -ne "localhost") {
-        # Get the site ID for use with win-acme
-        $siteId = (Get-Website -Name $config.SiteName).ID
+    # Configure based on certificate type
+    switch ($config.CertificateType) {
+        "LetsEncrypt" {
+            # Get the site ID for use with win-acme
+            $siteId = (Get-Website -Name $config.SiteName).ID
+            
+            # Run win-acme to create certificate
+            $winAcmeArgs = @(
+                "--target", "iis",
+                "--siteid", $siteId,
+                "--installation", "iis",
+                "--websiteroot", $wordpressPath,
+                "--emailaddress", $config.EmailAddress,
+                "--accepttos"
+            )
+            
+            Start-Process -FilePath "$winAcmePath\wacs.exe" -ArgumentList $winAcmeArgs -Wait -NoNewWindow
+            
+            "Let's Encrypt certificate created and installed by win-acme."
+        }
         
-        # Run win-acme to create certificate
-        $winAcmeArgs = @(
-            "--target", "iis",
-            "--siteid", $siteId,
-            "--installation", "iis",
-            "--websiteroot", $wordpressPath,
-            "--emailaddress", $config.EmailAddress,
-            "--accepttos"
-        )
+        "SelfSigned" {
+            # For localhost, create a self-signed certificate
+            "Creating self-signed certificate for development..."
+            $cert = New-SelfSignedCertificate -DnsName $domainName -CertStoreLocation "cert:\LocalMachine\My"
+            $thumbprint = $cert.Thumbprint
+            
+            # Add HTTPS binding to IIS website
+            "Configuring HTTPS binding for IIS..."
+            New-WebBinding -Name $config.SiteName -Protocol "https" -Port 443 -IPAddress "*" -SslFlags 0
+            
+            # Assign certificate to HTTPS binding
+            $certPath = "IIS:\SslBindings\!443"
+            Get-Item -Path "cert:\LocalMachine\My\$thumbprint" | New-Item -Path $certPath
+            
+            "Self-signed certificate configured for development use."
+        }
         
-        Start-Process -FilePath "$winAcmePath\wacs.exe" -ArgumentList $winAcmeArgs -Wait -NoNewWindow
-        
-        "Let's Encrypt certificate created and installed by win-acme."
-    } else {
-        # For localhost, create a self-signed certificate
-        "Creating self-signed certificate for development..."
-        $cert = New-SelfSignedCertificate -DnsName "localhost" -CertStoreLocation "cert:\LocalMachine\My"
-        $thumbprint = $cert.Thumbprint
-        
-        # Add HTTPS binding to IIS website
-        "Configuring HTTPS binding for IIS..."
-        New-WebBinding -Name $config.SiteName -Protocol "https" -Port 443 -IPAddress "*" -SslFlags 0
-        
-        # Assign certificate to HTTPS binding
-        $certPath = "IIS:\SslBindings\!443"
-        Get-Item -Path "cert:\LocalMachine\My\$thumbprint" | New-Item -Path $certPath
+        "CloudflareOrigin" {
+            # Import Cloudflare Origin Certificate
+            "Importing Cloudflare Origin Certificate..."
+            
+            # Verify the certificate and key files exist
+            if (-not (Test-Path $config.CloudflareCertPath)) {
+                Write-Error "Cloudflare certificate file not found at $($config.CloudflareCertPath)"
+                "Please check the path and try again. Certificate installation failed."
+            }
+            elseif (-not (Test-Path $config.CloudflareKeyPath)) {
+                Write-Error "Cloudflare private key file not found at $($config.CloudflareKeyPath)"
+                "Please check the path and try again. Certificate installation failed."
+            }
+            else {
+                # Create PFX file from PEM and KEY files
+                $pfxPath = "$env:TEMP\cloudflare_origin_cert.pfx"
+                $pfxPassword = [System.Guid]::NewGuid().ToString()
+                $securePassword = ConvertTo-SecureString -String $pfxPassword -Force -AsPlainText
+                
+                # Use OpenSSL to create PFX
+                $opensslPath = "$env:ProgramFiles\OpenSSL-Win64\bin\openssl.exe"
+                
+                # Check if OpenSSL is available, download if not
+                if (-not (Test-Path $opensslPath)) {
+                    "OpenSSL not found. Using certutil for certificate conversion..."
+                    
+                    # Create temporary combined file for conversion
+                    $combinedPemPath = "$env:TEMP\cloudflare_combined.pem"
+                    Get-Content $config.CloudflareCertPath | Set-Content $combinedPemPath
+                    "`n" | Add-Content $combinedPemPath
+                    Get-Content $config.CloudflareKeyPath | Add-Content $combinedPemPath
+                    
+                    # Convert to PFX using certutil
+                    certutil -mergepfx $combinedPemPath $pfxPath
+                    
+                    # Clean up
+                    Remove-Item $combinedPemPath -Force
+                }
+                else {
+                    # Use OpenSSL directly
+                    & $opensslPath pkcs12 -export -out $pfxPath -inkey $config.CloudflareKeyPath -in $config.CloudflareCertPath -password pass:$pfxPassword
+                }
+                
+                # Import the PFX certificate into Windows certificate store
+                Import-PfxCertificate -FilePath $pfxPath -CertStoreLocation 'Cert:\LocalMachine\My' -Password $securePassword | Out-Null
+                
+                # Get the thumbprint of the imported certificate
+                $cert = Get-ChildItem -Path 'Cert:\LocalMachine\My' | Where-Object { $_.Subject -like "*$domainName*" } | Sort-Object NotBefore -Descending | Select-Object -First 1
+                $thumbprint = $cert.Thumbprint
+                
+                # Clean up PFX file
+                Remove-Item $pfxPath -Force
+                
+                # Add HTTPS binding to IIS website
+                "Configuring HTTPS binding for IIS with Cloudflare Origin Certificate..."
+                New-WebBinding -Name $config.SiteName -Protocol "https" -Port 443 -IPAddress "*" -SslFlags 0
+                
+                # Assign certificate to HTTPS binding
+                $certPath = "IIS:\SslBindings\!443"
+                Get-Item -Path "cert:\LocalMachine\My\$thumbprint" | New-Item -Path $certPath
+                
+                "Cloudflare Origin Certificate successfully imported and configured."
+                "⚠️ Remember to set SSL/TLS encryption mode to 'Full (strict)' in your Cloudflare dashboard."
+            }
+        }
     }
     
     "SSL/HTTPS configuration complete."
     
-    # Create web.config redirect from HTTP to HTTPS if domain specified
+    # Create web.config redirect from HTTP to HTTPS if real domain specified
     if ($domainName -ne "localhost") {
         "Adding HTTP to HTTPS redirect..."
         $redirectWebConfig = @"
@@ -740,14 +845,50 @@ if ($config.ConfigureFirewall) {
     # Process each firewall rule
     foreach ($rule in $firewallRules) {
         if ($rule.Condition) {
-            $existingRule = Get-NetFirewallRule -DisplayName $rule.DisplayName -ErrorAction SilentlyContinue
+            # Check for existing rules with the same display name first
+            $exactNameRule = Get-NetFirewallRule -DisplayName $rule.DisplayName -ErrorAction SilentlyContinue
             
-            if (-not $existingRule) {
+            # Also check for any rules that might be functionally equivalent by port/protocol
+            $similarRules = Get-NetFirewallRule -Direction $rule.Direction -Action $rule.Action -ErrorAction SilentlyContinue | 
+                ForEach-Object { 
+                    $r = $_
+                    $portFilter = $r | Get-NetFirewallPortFilter -ErrorAction SilentlyContinue
+                    if ($portFilter -and $portFilter.Protocol -eq $rule.Protocol -and 
+                        ($portFilter.LocalPort -contains $rule.LocalPort -or $portFilter.LocalPort -eq $rule.LocalPort)) {
+                        $r
+                    }
+                }
+            
+            if ($exactNameRule) {
+                "✓ Firewall rule already exists with exact name: $($rule.DisplayName)"
+                
+                # Verify and update settings if needed
+                $portFilter = $exactNameRule | Get-NetFirewallPortFilter
+                if ($portFilter.Protocol -ne $rule.Protocol -or 
+                    $portFilter.LocalPort -ne $rule.LocalPort) {
+                    
+                    "Updating port/protocol settings for: $($rule.DisplayName)"
+                    $exactNameRule | Get-NetFirewallPortFilter | 
+                        Set-NetFirewallPortFilter -Protocol $rule.Protocol -LocalPort $rule.LocalPort
+                }
+                
+                # Ensure action and direction are correct
+                if ($exactNameRule.Action -ne $rule.Action -or $exactNameRule.Direction -ne $rule.Direction) {
+                    "Updating action/direction settings for: $($rule.DisplayName)"
+                    $exactNameRule | Set-NetFirewallRule -Action $rule.Action -Direction $rule.Direction
+                }
+            }
+            elseif ($similarRules) {
+                # Found functionally similar rules
+                $ruleList = ($similarRules | ForEach-Object { $_.DisplayName }) -join ", "
+                "✓ Found existing rules that already allow $($rule.Protocol) on port $($rule.LocalPort): $ruleList"
+                "  Skipping creation of redundant rule: $($rule.DisplayName)"
+            }
+            else {
+                # No similar rule exists, create a new one
                 New-NetFirewallRule -DisplayName $rule.DisplayName -Direction $rule.Direction `
                                    -Protocol $rule.Protocol -LocalPort $rule.LocalPort -Action $rule.Action | Out-Null
                 "✓ Created firewall rule: $($rule.DisplayName)"
-            } else {
-                "✓ Firewall rule already exists: $($rule.DisplayName)"
             }
         }
     }
@@ -1257,7 +1398,16 @@ if (-not [string]::IsNullOrWhiteSpace($config.Domain)) {
 "WordPress Installation Complete."
 "----------------------------------------"
 "Production-ready enhancements added:"
-if ($config.UseHTTPS) { "✓ SSL/HTTPS configuration with Let's Encrypt" } else { "✗ SSL/HTTPS not configured" }
+if ($config.UseHTTPS) { 
+    switch ($config.CertificateType) {
+        "LetsEncrypt" { "✓ SSL/HTTPS configuration with Let's Encrypt" }
+        "SelfSigned" { "✓ SSL/HTTPS configuration with self-signed certificate (development only)" }
+        "CloudflareOrigin" { "✓ SSL/HTTPS configuration with Cloudflare Origin Certificate" }
+        default { "✓ SSL/HTTPS configuration" }
+    }
+} else { 
+    "✗ SSL/HTTPS not configured" 
+}
 if (-not [string]::IsNullOrWhiteSpace($config.Domain)) { "✓ Domain configuration for $($config.Domain)" } else { "✗ No domain configured" }
 if ($config.ConfigureFirewall) { "✓ Windows Firewall rules" } else { "✗ Firewall not configured" }
 "✓ Security headers configured"
@@ -1410,7 +1560,16 @@ if ($config.ModifyHostsFile) {
 "WordPress Installation Complete."
 "----------------------------------------"
 "Production-ready enhancements added:"
-if ($config.UseHTTPS) { "✓ SSL/HTTPS configuration with Let's Encrypt" } else { "✗ SSL/HTTPS not configured" }
+if ($config.UseHTTPS) { 
+    switch ($config.CertificateType) {
+        "LetsEncrypt" { "✓ SSL/HTTPS configuration with Let's Encrypt" }
+        "SelfSigned" { "✓ SSL/HTTPS configuration with self-signed certificate (development only)" }
+        "CloudflareOrigin" { "✓ SSL/HTTPS configuration with Cloudflare Origin Certificate" }
+        default { "✓ SSL/HTTPS configuration" }
+    }
+} else { 
+    "✗ SSL/HTTPS not configured" 
+}
 if (-not [string]::IsNullOrWhiteSpace($config.Domain)) { "✓ Domain configuration for $($config.Domain)" } else { "✗ No domain configured" }
 if ($config.ConfigureFirewall) { "✓ Windows Firewall rules" } else { "✗ Firewall not configured" }
 "✓ Security headers configured"

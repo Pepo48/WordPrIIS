@@ -8,7 +8,7 @@ WordPrIIS is a comprehensive PowerShell script that automates the installation a
 
 - **Full Stack Installation**: Automatically installs and configures IIS, PHP 8.4, MySQL 8.4, and WordPress
 - **Interactive Configuration**: Customize installation parameters through an interactive prompt
-- **HTTPS Support**: Configures SSL/TTLS with Let's Encrypt certificates (via win-acme) or self-signed certificates for development
+- **HTTPS Support**: Configures SSL/TTLS with Let's Encrypt certificates, Cloudflare Origin certificates, or self-signed certificates for development
 - **Enhanced Security**:
   - Security headers configuration (CSP, HSTS, XSS Protection, etc.)
   - IP restrictions for wp-admin area
@@ -74,29 +74,94 @@ $config = @{
 
 Alternatively, the interactive mode will prompt you for these settings during execution.
 
+## Interactive Configuration Steps Explained
+
+When running in interactive mode, the script will prompt you for various settings. Here's what each option means:
+
+### Site Configuration
+- **Site name**: The name of your WordPress site in IIS (default: "WordPress")
+- **HTTP port**: The port for HTTP traffic (default: 80)
+- **Domain name**: Your website's domain name (leave empty to use server IP address)
+
+### SSL/HTTPS Configuration
+- **Configure HTTPS?**: Whether to set up SSL/TLS encryption
+- **Certificate options**:
+  1. **Let's Encrypt**: Automatically obtain and renew free certificates (requires public domain)
+  2. **Self-signed**: Create a certificate for development (not trusted by browsers)
+  3. **Cloudflare Origin**: Use certificates from Cloudflare for origin encryption
+- **Email address**: Used for Let's Encrypt registration and expiry notifications (only required when using Let's Encrypt)
+
+### Security Configuration
+- **Configure Windows Firewall?**: Set up firewall rules for web traffic
+- **Block all inbound traffic except allowed ports?**: Create restrictive firewall policy (caution: can block remote access)
+- **Prevent RDP lockout**: Ensures remote desktop access remains available
+- **Restrict wp-admin access by IP address?**: Limit WordPress admin area to specific IP addresses
+- **Allowed IPs for wp-admin**: List of IP addresses/ranges allowed to access admin area
+
+### Environment Configuration
+- **Enable development mode?**: Less strict security settings for development
+
+### Backup Configuration
+- **Configure automated backups?**: Set up scheduled backups of files and database
+- **Backup schedule**: Daily, Weekly, or Monthly backups
+- **Number of backups to retain**: How many backup copies to keep
+- **Backup storage path**: Where to store the backup files
+
+### Advanced Settings
+- **MySQL version**: Which MySQL version to install
+- **PHP version**: Which PHP version to install
+- **Win-acme version**: Which Let's Encrypt client version to use
+
 ## Detailed Features
 
 ### SSL/HTTPS Configuration
 
-WordPrIIS can automatically configure HTTPS in two ways:
-- For production domains: Using Let's Encrypt certificates via win-acme
-- For development: Using self-signed certificates
+WordPrIIS can automatically configure HTTPS in three ways:
+- **Let's Encrypt**: Free, auto-renewing certificates for public domains
+- **Self-signed**: For development environments (generates browser warnings)
+- **Cloudflare Origin Certificates**: For sites behind Cloudflare proxy
 
 ### Security Enhancements
 
-- **Security Headers**: Configures modern web security headers like CSP, HSTS, etc.
-- **IP Restrictions**: Limits access to wp-admin to specified IP addresses
-- **Firewall Rules**: Configures Windows Firewall for HTTP/HTTPS traffic
-- **Remote Access Protection**: Special safeguards to prevent RDP lockout
-- **Environment-Based Settings**: Different security levels for development vs production
+- **Security Headers**: Configures modern web security headers:
+  - Content-Security-Policy: Controls what resources can be loaded
+  - X-Content-Type-Options: Prevents MIME type sniffing
+  - X-Frame-Options: Prevents site from being embedded in frames
+  - X-XSS-Protection: Helps prevent cross-site scripting attacks
+  - Strict-Transport-Security: Forces HTTPS connections
+  - Referrer-Policy: Controls how much referrer information is sent
+  
+- **IP Restrictions**: Limits access to wp-admin to specified IP addresses:
+  - Creates a separate web.config in wp-admin folder
+  - Blocks all IPs except the ones you specify
+  - Provides easy rollback script if you lock yourself out
+  
+- **Firewall Rules**: Configures Windows Firewall for proper web traffic:
+  - Opens HTTP (Port 80): Allows incoming traffic to reach your WordPress site over standard HTTP
+  - Opens HTTPS (Port 443): Enables secure HTTPS connections when SSL is configured
+  - Remote Desktop Protection (Port 3389): Ensures you don't get locked out of your server by preserving RDP access
+  - WinRM Protection (Port 5985): Preserves Windows Remote Management functionality for remote administration
+  - Default Deny Option: Can optionally block all other inbound traffic not explicitly allowed (with safety features to prevent lockout)
+  - Custom Rule Creation: Each rule is created with appropriate names and parameters for easy management
+  - Rollback Scripts: Provides scripts to restore default firewall settings if needed
+  
+- **Remote Access Protection**: Special safeguards to prevent RDP lockout:
+  - Ensures Remote Desktop port remains accessible
+  - Protects Windows Remote Management (WinRM) if needed
+  
+- **Environment-Based Settings**: Different security levels for development vs production:
+  - Stricter Content-Security-Policy in production
+  - HSTS in production mode
+  - Development mode allows more permissive settings for testing
 
 ### Backup System
 
 WordPrIIS sets up automated backups with these default settings:
-- Schedule: Daily at 3:00 AM (configurable to weekly or monthly)
-- Retention: 7 backups (configurable)
-- Location: `C:\WordPressBackups\` (configurable)
-- Content: Both WordPress files and MySQL database
+- **Schedule**: Daily at 3:00 AM (configurable to weekly or monthly)
+- **Retention**: 7 backups (configurable)
+- **Location**: `C:\WordPressBackups\` (configurable)
+- **Content**: Both WordPress files and MySQL database
+- **Process**: Files are compressed and old backups are automatically removed
 
 ## Using Without a Domain Name
 
@@ -243,38 +308,9 @@ The tests use Pester's mocking capabilities to:
 
 #### CI/CD Integration
 
-The repository includes GitHub Actions workflows to automatically test the script on every push or pull request:
+The repository includes GitHub Actions workflows to automatically test the script on every push or pull request. The workflow file is located at `.github/workflows/pester-tests.yml`
 
-```yaml
-name: PowerShell Tests
-
-on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
-
-jobs:
-  test:
-    runs-on: windows-latest
-    steps:
-    - uses: actions/checkout@v3
-    - name: Install Pester
-      shell: pwsh
-      run: |
-        Install-Module -Name Pester -MinimumVersion 5.0.0 -Force -SkipPublisherCheck
-    - name: Run Tests
-      shell: pwsh
-      run: |
-        Set-Location -Path "$env:GITHUB_WORKSPACE\tests"
-        $result = Invoke-Pester -Path .\WordPrIIS.Tests.ps1 -PassThru
-        if ($result.FailedCount -gt 0) {
-          Write-Error "Tests failed"
-          exit 1
-        }
-```
-
-For full details on the testing suite, see the [TESTSUITE.md](TESTSUITE.md) file in the repository.
+For full details on the testing suite, see the [testsuite.md](testsuite.md) file in the repository.
 
 ## License
 
