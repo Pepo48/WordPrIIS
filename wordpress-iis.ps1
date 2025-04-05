@@ -292,6 +292,101 @@ if (-not (Test-ComponentInstalled -Name "URL Rewrite Module" -TestScript {
 }
 
 <#
+======================== HTTP Compression Configuration ======================
+This section configures HTTP compression (GZIP/Deflate) for better performance
+#>
+
+"`r`nHTTP Compression Configuration..."
+# Check if HTTP compression is already properly configured
+if (-not (Test-ComponentInstalled -Name "HTTP Compression" -TestScript {
+    # Check if dynamic compression is enabled
+    $dynamicSection = Get-WebConfigurationProperty -Filter "system.webServer/urlCompression" -Name "doDynamicCompression" -PSPath "MACHINE/WEBROOT/APPHOST"
+    $staticSection = Get-WebConfigurationProperty -Filter "system.webServer/urlCompression" -Name "doStaticCompression" -PSPath "MACHINE/WEBROOT/APPHOST"
+    return $dynamicSection -and $staticSection
+})) {
+    "Configuring HTTP compression for better performance..."
+    
+    # Enable compression features if not already installed
+    Install-WindowsFeature -Name Web-Stat-Compression, Web-Dyn-Compression | Out-Null
+    
+    # Enable both static and dynamic compression
+    Set-WebConfigurationProperty -Filter "system.webServer/urlCompression" -Name "doDynamicCompression" -Value "True" -PSPath "MACHINE/WEBROOT/APPHOST"
+    Set-WebConfigurationProperty -Filter "system.webServer/urlCompression" -Name "doStaticCompression" -Value "True" -PSPath "MACHINE/WEBROOT/APPHOST"
+    
+    # Configure static compression (similar to gzip settings)
+    Set-WebConfigurationProperty -Filter "system.webServer/httpCompression/staticTypes" -PSPath "MACHINE/WEBROOT/APPHOST" -Name "." -Value @()
+    
+    # Add MIME types for static compression (similar to gzip_types)
+    $staticMimeTypes = @(
+        "text/plain",
+        "text/css", 
+        "text/html",
+        "text/xml", 
+        "text/javascript",
+        "application/javascript",
+        "application/json",
+        "application/xml", 
+        "application/xhtml+xml",
+        "application/rss+xml",
+        "application/x-javascript",
+        "application/atom+xml"
+    )
+    
+    foreach ($mimeType in $staticMimeTypes) {
+        Add-WebConfigurationProperty -Filter "system.webServer/httpCompression/staticTypes" -PSPath "MACHINE/WEBROOT/APPHOST" -Name "." -Value @{mimeType=$mimeType}
+    }
+    
+    # Configure dynamic compression (for dynamic content)
+    Set-WebConfigurationProperty -Filter "system.webServer/httpCompression/dynamicTypes" -PSPath "MACHINE/WEBROOT/APPHOST" -Name "." -Value @()
+    
+    # Add MIME types for dynamic compression
+    $dynamicMimeTypes = @(
+        "text/plain",
+        "text/css", 
+        "text/html",
+        "text/xml", 
+        "text/javascript",
+        "application/javascript",
+        "application/json",
+        "application/xml", 
+        "application/xhtml+xml",
+        "application/rss+xml"
+    )
+    
+    foreach ($mimeType in $dynamicMimeTypes) {
+        Add-WebConfigurationProperty -Filter "system.webServer/httpCompression/dynamicTypes" -PSPath "MACHINE/WEBROOT/APPHOST" -Name "." -Value @{mimeType=$mimeType}
+    }
+    
+    # Set compression level (similar to gzip_comp_level)
+    # Value range is 0-10, where 0 is no compression and 10 is maximum compression
+    # We'll use 4 which is a good balance between CPU usage and compression ratio
+    Set-WebConfigurationProperty -Filter "system.webServer/httpCompression/dynamicCompressionLevel" -Name "value" -Value 4 -PSPath "MACHINE/WEBROOT/APPHOST"
+    Set-WebConfigurationProperty -Filter "system.webServer/httpCompression/staticCompressionLevel" -Name "value" -Value 7 -PSPath "MACHINE/WEBROOT/APPHOST"
+    
+    # Set minimum file size for compression (similar to gzip_min_length)
+    # The value is in bytes, 1024 bytes = 1KB
+    Set-WebConfigurationProperty -Filter "system.webServer/httpCompression" -Name "minFileSizeForComp" -Value 1024 -PSPath "MACHINE/WEBROOT/APPHOST"
+    
+    # Enable compression for HTTP 1.0 requests as well (similar to gzip_http_version 1.0)
+    Set-WebConfigurationProperty -Filter "system.webServer/httpCompression" -Name "noCompressionForHttp10" -Value "False" -PSPath "MACHINE/WEBROOT/APPHOST"
+    
+    # Enable compression for proxied requests (similar to gzip_proxied any)
+    Set-WebConfigurationProperty -Filter "system.webServer/httpCompression" -Name "noCompressionForProxies" -Value "False" -PSPath "MACHINE/WEBROOT/APPHOST"
+    
+    # Cache compressed files for better performance
+    Set-WebConfigurationProperty -Filter "system.webServer/httpCompression" -Name "staticCompressionDisableCpuUsage" -Value 80 -PSPath "MACHINE/WEBROOT/APPHOST"
+    Set-WebConfigurationProperty -Filter "system.webServer/httpCompression" -Name "dynamicCompressionDisableCpuUsage" -Value 80 -PSPath "MACHINE/WEBROOT/APPHOST"
+    
+    # Configure CPU usage threshold for dynamic compression
+    Set-WebConfigurationProperty -Filter "system.webServer/httpCompression" -Name "dynamicCompressionEnableCpuUsage" -Value 50 -PSPath "MACHINE/WEBROOT/APPHOST"
+    Set-WebConfigurationProperty -Filter "system.webServer/httpCompression" -Name "staticCompressionEnableCpuUsage" -Value 50 -PSPath "MACHINE/WEBROOT/APPHOST"
+    
+    "HTTP Compression successfully configured. Content will be automatically compressed to improve performance."
+} else {
+    "✓ HTTP Compression is already configured."
+}
+
+<#
 ========================== Visual C++ Redistributables ========================
 These are prerequisites for PHP and MySQL to work properly on Windows.
 #>
