@@ -18,6 +18,7 @@ WordPrIIS is a comprehensive PowerShell script that automates the installation a
 - **Automated Backups**: Schedule regular backups of WordPress files and database
 - **Idempotent Design**: Can be run multiple times without duplicating work
 - **Reversible Changes**: Includes rollback scripts to undo configuration changes
+- **Modular Architecture**: Well-organized code modules for easier maintenance and customization
 
 ## Requirements
 
@@ -48,9 +49,34 @@ By default, WordPress is installed to:
 - PHP: `C:\Program Files\PHP\v8.4\`
 - MySQL: `C:\Program Files\MySQL\MySQL Server 8.4\`
 
+## Project Structure
+
+The script is organized into modules for better maintainability:
+
+```
+WordPrIIS/
+├── wordpress-iis.ps1         # Main script
+├── modules/
+│   ├── Config.ps1            # Configuration parameters
+│   ├── Utils.ps1             # Common utility functions
+│   ├── InteractiveConfig.ps1 # Interactive setup
+│   ├── IIS-Setup.ps1         # IIS web server setup
+│   ├── PHP-Setup.ps1         # PHP installation
+│   ├── MySQL-Setup.ps1       # MySQL database setup
+│   ├── WordPress-Setup.ps1   # WordPress core installation
+│   ├── SSL-Setup.ps1         # HTTPS configuration
+│   ├── Domain-Setup.ps1      # Domain name setup
+│   ├── Security.ps1          # Security enhancements
+│   ├── Backup-Setup.ps1      # Backup configuration
+│   ├── Rollback-Scripts.ps1  # Creates scripts to undo changes
+│   └── Summary.ps1           # Installation summary
+├── tests/                    # Testing framework
+└── docs/                     # Additional documentation
+```
+
 ## Configuration Options
 
-The script begins with a configuration section you can modify directly:
+The main configuration options are defined in `modules/Config.ps1`:
 
 ```powershell
 $config = @{
@@ -191,6 +217,23 @@ The installation creates several management scripts:
 
 These scripts allow you to easily undo specific configuration changes if needed.
 
+## Extending and Customizing
+
+The modular architecture makes it easy to customize the installer:
+
+1. Modify the configuration in `modules/Config.ps1` to change default settings
+2. Edit individual module files to customize specific components
+3. Add new module files and import them in the main script to extend functionality
+
+Example of adding a custom module:
+
+```powershell
+# Create a new module in modules/Custom-Module.ps1
+# Add your custom code to the module
+# Import it in the main script
+. "$ScriptPath\modules\Custom-Module.ps1"
+```
+
 ## Post-Installation Steps
 
 After running the script, you should:
@@ -222,95 +265,6 @@ Common issues:
 4. **WordPress fails to connect to database**: Verify MySQL credentials in wp-config.
 
 For detailed troubleshooting, check the installation log at the location shown at the end of the script.
-
-## Customization
-
-You can customize the script by:
-
-1. Modifying the `$config` hash table at the beginning of the script
-2. Adding additional components or plugins to the installation
-3. Customizing security headers or other security settings
-4. Adding post-installation steps like theme installation
-
-## Advanced Customization
-
-WordPrIIS is highly customizable through its configuration parameters:
-
-### Component Versions
-```powershell
-# PHP and MySQL versions can be customized
-$config.PHPVersion = "8.4.5"
-$config.MySQLVersion = "8.4.4"
-$config.WinAcmeVersion = "2.2.9.1701"
-```
-
-### Remote Access Protection
-```powershell
-# Prevent firewall from blocking RDP access
-$config.PreventRDPLockout = $true
-$config.RDPPort = 3389  # Default RDP port, change if needed
-```
-
-### Security Settings
-```powershell
-# Security settings can be adjusted
-$config.FirewallDefaultDeny = $true  # Block all inbound except allowed
-$config.DevelopmentMode = $false     # Stricter security in production mode
-$config.AllowedIPsForAdmin = @("192.168.1.0/24", "10.0.0.5")
-```
-
-## Testing
-
-### Automated Testing with Pester
-
-WordPrIIS includes a comprehensive test suite built with Pester, PowerShell's testing framework. The tests verify script functionality without affecting the actual environment by mocking system commands.
-
-#### Running Tests Locally
-
-```powershell
-# Install Pester if not already installed
-Install-Module -Name Pester -MinimumVersion 5.0.0 -Force -SkipPublisherCheck
-
-# Navigate to the tests directory
-cd c:\Users\pepo4\IdeaProjects\WordPrIIS\tests
-
-# Run the tests
-Invoke-Pester -Path .\WordPrIIS.Tests.ps1 -Output Detailed
-```
-
-#### Test Structure
-
-The test suite consists of:
-
-- **WordPrIIS.Tests.ps1**: Main test file containing test cases for each component
-- **Import-ScriptFunctions.ps1**: Helper script that extracts functions from the main script for isolated testing
-
-#### What's Being Tested
-
-The tests verify that the script correctly:
-
-1. Detects whether components are already installed
-2. Installs and configures IIS
-3. Installs and configures PHP
-4. Installs and configures MySQL
-5. Downloads and sets up WordPress
-6. Configures HTTPS with Let's Encrypt or self-signed certificates
-7. Sets up security features (firewall, IP restrictions)
-8. Configures automated backups
-
-#### Mocking Approach
-
-The tests use Pester's mocking capabilities to:
-
-- Prevent actual execution of system-modifying commands
-- Simulate both successful and failure scenarios
-- Verify that the script calls the right commands with the right parameters
-
-#### CI/CD Integration
-
-The repository includes GitHub Actions workflows to automatically test the script on every push or pull request. The workflow file is located at `.github/workflows/pester-tests.yml`
-
-For full details on the testing suite, see the [testsuite.md](testsuite.md) file in the repository.
 
 ## License
 

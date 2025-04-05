@@ -1,45 +1,70 @@
 <#
 .SYNOPSIS
-Helper script to extract and import functions from the main WordPress IIS script
-
-.DESCRIPTION
-This script extracts functions from the main wordpress-iis.ps1 script
-so they can be tested independently with Pester
+    Helper script to extract functions from a PowerShell script for testing.
 #>
+param (
+    [Parameter(Mandatory = $false)]
+    [string]$ScriptPath = (Join-Path -Path (Split-Path -Parent $PSScriptRoot) -ChildPath "wordpress-iis.ps1")
+)
 
-# Define the path to the script being tested
-$ScriptPath = "$PSScriptRoot\..\wordpress-iis.ps1"
-
-# Check if the script exists
-if (-not (Test-Path $ScriptPath)) {
-    throw "Script not found at $ScriptPath"
+# First, try to use ModuleAdapter to access functions from modules
+if (Test-Path "$PSScriptRoot\ModuleAdapter.ps1") {
+    Write-Host "Using ModuleAdapter.ps1 to access module functions" -ForegroundColor Green
+    . "$PSScriptRoot\ModuleAdapter.ps1"
+    return
 }
 
-# Read the script content
-$ScriptContent = Get-Content -Path $ScriptPath -Raw
+# If ModuleAdapter doesn't exist, fall back to original behavior
+try {
+    # Get the content of the script file
+    $scriptContent = Get-Content -Path $ScriptPath -Raw -ErrorAction Stop
+}
+catch {
+    throw "Failed to load script content from $ScriptPath. Error: $_"
+}
 
-# Extract the Test-ComponentInstalled function which can be tested independently
-$functionRegex = '(?ms)function\s+Test-ComponentInstalled\s*\{.*?\n\}'
-$match = [regex]::Match($ScriptContent, $functionRegex)
+# Extract function declarations from the script
+$functions = [regex]::Matches($scriptContent, '(?ms)function\s+([\w-]+)\s*(?:\(([^)]*)\))?\s*\{(.*?)\n\}')
 
-if ($match.Success) {
-    # Define a modified version that only returns boolean result
-    function Test-ComponentInstalled {
-        param (
-            # Add the missing parameters here if applicable
-            [string]$Name,
-            [scriptblock]$TestScript
-        )
-        
-        # Original function writes output, we suppress that in tests
-        $installed = & $TestScript
-        
-        return $installed -eq $true
-    }
+if ($functions.Count -eq 0) {
+    Write-Warning "No functions found in the script."
+    return
+}
+
+# Define each function in the current scope
+foreach ($function in $functions) {
+    $functionName = $function.Groups[1].Value
+    $functionParams = $function.Groups[2].Value
+    $functionBody = $function.Groups[3].Value
     
-    Write-Output "Successfully imported and modified Test-ComponentInstalled function for testing"
-} else {
-    throw "Could not find Test-ComponentInstalled function in the script"
+    # Create the function definition
+    $functionDefinition = "function Script$functionName {"
+    if (-not [string]::IsNullOrWhiteSpace($functionParams)) {
+        $functionDefinition += "param($functionParams)"
+    }
+    $functionDefinition += $functionBody + "`n}"
+    
+    try {
+        # Define the function
+        Invoke-Expression $functionDefinition
+        Write-Verbose "Defined function: Script$functionName" -Verbose
+    }
+    catch {
+        Write-Warning "Failed to define function: Script$functionName. Error: $_"
+    }
+}
+
+# Extract and set $config and other variables used in the script
+try {
+    $configMatch = [regex]::Match($scriptContent, '(?ms)\$config\s*=\s*@\{(.*?)\}')
+    if ($configMatch.Success) {
+        $configContent = $configMatch.Groups[1].Value
+        Invoke-Expression "`$global:config = @{$configContent}"
+        Write-Verbose "Defined `$config variable" -Verbose
+    }
+}
+catch {
+    Write-Warning "Failed to extract and define `$config variable. Error: $_"
 }
 
 # Mock required IIS cmdlets
@@ -312,7 +337,7 @@ function New-NetFirewallRule {
 
 function Set-NetFirewallProfile {
     param(
-        [string]$Profile,
+        [string]$Profile, # Changed back to match what's used in the test
         [string]$DefaultInboundAction
     )
     # Mock implementation

@@ -33,34 +33,24 @@ Describe "Test-ComponentInstalled Function" {
 }
 ```
 
-#### IIS Installation
+#### Module Testing
 
-Tests the code that installs and configures Internet Information Services (IIS).
+With the new modular architecture, each module is tested independently:
 
-#### PHP Installation
+- **Config.ps1**: Tests that configuration settings are properly defined
+- **Utils.ps1**: Tests utility functions like `Test-ComponentInstalled` and `Get-YesNoResponse`
+- **IIS-Setup.ps1**: Tests IIS installation and configuration
+- **PHP-Setup.ps1**: Tests PHP download, extraction, and configuration
+- **MySQL-Setup.ps1**: Tests MySQL Server installation and database setup
+- **WordPress-Setup.ps1**: Tests WordPress download, extraction, and configuration
+- **SSL-Setup.ps1**: Tests SSL certificate creation and configuration
+- **Domain-Setup.ps1**: Tests domain name configuration
+- **Security.ps1**: Tests security features including firewall rules and IP restrictions
+- **Backup-Setup.ps1**: Tests backup system configuration
+- **Rollback-Scripts.ps1**: Tests creation of rollback scripts
+- **Summary.ps1**: Tests summary output generation
 
-Tests the PHP download, extraction, and configuration functionality.
-
-#### MySQL Installation
-
-Tests the MySQL Server installation and database setup.
-
-#### WordPress Installation
-
-Tests WordPress download, extraction, and configuration.
-
-#### Security Configuration
-
-Tests security features including:
-- Firewall rules
-- IP restrictions for wp-admin area
-- Security headers
-
-#### Backup System
-
-Tests the creation of backup scripts and scheduled tasks.
-
-## Mocking Strategy
+### Mocking Strategy
 
 The tests use extensive mocking to prevent any real system changes:
 
@@ -94,18 +84,46 @@ Mock Set-NetFirewallProfile {}
 For specialized testing scenarios:
 
 ```powershell
-# Test specific components
-Invoke-Pester -Path .\WordPrIIS.Tests.ps1 -TagFilter "IIS"
+# Test specific modules
+Invoke-Pester -Path .\WordPrIIS.Tests.ps1 -TagFilter "MySQL"
 
 # Run tests with detailed output including code coverage
-Invoke-Pester -Path .\WordPrIIS.Tests.ps1 -Output Detailed -CodeCoverage .\Import-ScriptFunctions.ps1
+Invoke-Pester -Path .\WordPrIIS.Tests.ps1 -Output Detailed -CodeCoverage ..\modules\*.ps1
+```
+
+## Updating Tests for Modular Architecture
+
+When testing the modular architecture:
+
+1. Import the specific module you want to test
+2. Create mocks for functions it depends on
+3. Write tests for the functions in that module
+4. Ensure proper assertions to verify functionality
+
+Example for testing a module:
+
+```powershell
+BeforeAll {
+    # Import the module to test
+    . "$PSScriptRoot\..\modules\Utils.ps1"
+    
+    # Create necessary mocks
+    Mock Write-Host {}
+}
+
+Describe "Utils Module" {
+    It "Test-ComponentInstalled returns correct results" {
+        # Test implementation
+    }
+}
 ```
 
 ## Extending the Tests
 
 When adding new functionality to the main script:
 
-1. Extract the relevant functions in Import-ScriptFunctions.ps1
-2. Add appropriate mocks for any new cmdlets used
-3. Create new test cases in WordPrIIS.Tests.ps1
-4. Ensure proper assertions are made to verify functionality
+1. Create a new module in the modules directory
+2. Update Import-ScriptFunctions.ps1 to include your new functions
+3. Add appropriate mocks for any new cmdlets used
+4. Create new test cases in WordPrIIS.Tests.ps1 or a new test file
+5. Ensure proper assertions are made to verify functionality
