@@ -35,6 +35,8 @@ $config = @{
     PHPSha256 = "6fd0e9131c242e71a4975a67395c33ac5dab221811ad980c78dfd197f6ead4a7"  # SHA256 for PHP download validation
     MaxUploadSize = "20M"
     MemoryLimit = "256M"
+    # PHP Performance settings
+    EnablePHPOptimizations = $true
     # Win-acme settings
     WinAcmeVersion = "2.2.9.1701"  # Win-acme version
     # Remote access protection

@@ -90,3 +90,18 @@ function Import-WebAdministrationModule {
     }
     return $true
 }
+
+function Test-PHPOPcacheAvailable {
+    param (
+        [string]$phpPath
+    )
+    
+    # Check if php.exe exists
+    if (-not (Test-Path "$phpPath\php.exe")) {
+        return $false
+    }
+    
+    # Run PHP with -m flag to list modules and check for OPcache
+    $modules = & "$phpPath\php.exe" -m
+    return ($modules -contains "Zend OPcache")
+}

@@ -123,6 +123,9 @@ if ($showAdvanced) {
         }
     }
     
+    # PHP Optimization settings
+    $config.EnablePHPOptimizations = Get-YesNoResponse -Prompt "Enable PHP performance optimizations (OPcache, JIT)?" -Default $config.EnablePHPOptimizations
+    
     # Win-acme Advanced Settings
     $winAcmeVersion = Read-Host -Prompt "Win-acme version [$($config.WinAcmeVersion)]"
     if (-not [string]::IsNullOrWhiteSpace($winAcmeVersion)) { $config.WinAcmeVersion = $winAcmeVersion }

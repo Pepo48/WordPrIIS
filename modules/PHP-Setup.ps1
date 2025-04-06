@@ -196,3 +196,73 @@ if (-not (Test-ComponentInstalled -Name "PHP" -TestScript {
         "Test environment detected: Skipping PHP registration with IIS"
     }
 }
+
+function Configure-PHPOptimizations {
+    param (
+        [string]$phpIniPath
+    )
+    
+    Write-Host "Configuring PHP optimizations similar to Plesk..." -ForegroundColor Green
+    
+    # Define optimization block
+    $optimizationBlock = @"
+
+; PHP Performance Optimizations
+; Similar to Plesk optimization settings
+; DO NOT MODIFY THIS SECTION MANUALLY AS IT MAY BE OVERWRITTEN BY FUTURE UPDATES
+
+; Enable JIT compilation and realpath cache
+opcache.huge_code_pages=1
+opcache.interned_strings_buffer=64
+opcache.jit=1254
+opcache.jit_buffer_size=32M
+opcache.max_accelerated_files=1000
+opcache.max_wasted_percentage=15
+opcache.memory_consumption=128
+opcache.revalidate_path=0
+opcache.enable=1
+opcache.enable_cli=0
+
+; Disable open_basedir for better performance (adjust for production environments)
+open_basedir=
+"@
+
+    # Read current PHP.ini content
+    $phpIniContent = Get-Content -Path $phpIniPath -Raw
+    
+    # Check if optimization block already exists
+    if ($phpIniContent -notmatch "PHP Performance Optimizations") {
+        # Append optimization block to php.ini
+        Add-Content -Path $phpIniPath -Value $optimizationBlock
+        Write-Host "PHP performance optimizations added successfully." -ForegroundColor Green
+    } else {
+        Write-Host "PHP performance optimizations already exist in php.ini." -ForegroundColor Yellow
+    }
+}
+
+function Setup-PHP {
+    param (
+        [hashtable]$config
+    )
+    
+    # ...existing code...
+    
+    # Existing PHP configuration code
+
+    # Only apply optimizations if enabled in config
+    if ($config.EnablePHPOptimizations) {
+        Configure-PHPOptimizations -phpIniPath "$phpPath\php.ini"
+        
+        # Verify OPcache is enabled
+        if (Test-PHPOPcacheAvailable -phpPath $phpPath) {
+            Write-Host "PHP OPcache is properly configured and enabled." -ForegroundColor Green
+        } else {
+            Write-Host "Warning: PHP OPcache may not be enabled. Performance optimizations may not be active." -ForegroundColor Yellow
+            Write-Host "Try reinstalling PHP with the 'opcache' extension enabled." -ForegroundColor Yellow
+        }
+    } else {
+        Write-Host "PHP performance optimizations skipped per configuration." -ForegroundColor Yellow
+    }
+    
+    # ...existing code...
+}

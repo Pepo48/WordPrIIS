@@ -14,6 +14,11 @@ WordPrIIS is a comprehensive PowerShell script that automates the installation a
   - IP restrictions for wp-admin area
   - Firewall configuration
   - Optional restrictive mode for production environments
+- **PHP Performance Optimizations**:
+  - OPcache configuration for improved PHP performance
+  - JIT compilation settings for PHP 8.x
+  - Memory and cache optimization settings
+  - Similar to Plesk optimization settings
 - **Domain Management**: Supports custom domains with automatic configuration
 - **Automated Backups**: Schedule regular backups of WordPress files and database
 - **Idempotent Design**: Can be run multiple times without duplicating work
@@ -137,6 +142,7 @@ When running in interactive mode, the script will prompt you for various setting
 - **MySQL version**: Which MySQL version to install
 - **PHP version**: Which PHP version to install
 - **Win-acme version**: Which Let's Encrypt client version to use
+- **Enable PHP performance optimizations**: Configure OPcache and JIT compilation for better performance
 
 ## Detailed Features
 
