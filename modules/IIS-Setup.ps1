@@ -10,13 +10,58 @@ if (-not (Test-ComponentInstalled -Name "IIS" -TestScript {
     (Get-WindowsFeature Web-Server).Installed -eq $true
 })) {
     "Installing required IIS features for hosting WordPress..."
-    Install-WindowsFeature -Name Web-Server, Web-Common-Http, Web-Static-Content, Web-Default-Doc, 
-        Web-Dir-Browsing, Web-Http-Errors, Web-App-Dev, Web-CGI, Web-Health, 
-        Web-Http-Logging, Web-Log-Libraries, Web-Request-Monitor, Web-Security, 
-        Web-Filtering, Web-Performance, Web-Stat-Compression, Web-Mgmt-Tools, 
-        Web-Mgmt-Service, WAS, WAS-Process-Model, WAS-NET-Environment, 
-        WAS-Config-APIs, Net-Framework-Core -IncludeManagementTools | Out-Null
-    "IIS Installation Complete."
+    try {
+        Install-WindowsFeature -Name Web-Server, Web-Common-Http, Web-Static-Content, Web-Default-Doc, 
+            Web-Dir-Browsing, Web-Http-Errors, Web-App-Dev, Web-CGI, Web-Health, 
+            Web-Http-Logging, Web-Log-Libraries, Web-Request-Monitor, Web-Security, 
+            Web-Filtering, Web-Performance, Web-Stat-Compression, Web-Mgmt-Tools, 
+            Web-Mgmt-Service, WAS, WAS-Process-Model, WAS-NET-Environment, 
+            WAS-Config-APIs, Net-Framework-Core -IncludeManagementTools | Out-Null
+        "IIS Installation Complete."
+    }
+    catch {
+        "ERROR: Failed to install IIS components. $($_.Exception.Message)"
+        "You may need to run this script as Administrator or install IIS manually through Server Manager."
+        return $false
+    }
+}
+
+# Define a better WebAdministration import function
+function Import-WebAdministrationModule {
+    try {
+        # First try to import the module directly
+        Import-Module WebAdministration -ErrorAction Stop
+        return $true
+    }
+    catch {
+        try {
+            # If that fails, try to load the assembly and create the module
+            Add-PSSnapin WebAdministration -ErrorAction Stop
+            return $true
+        }
+        catch {
+            try {
+                # If both previous methods fail, try one more approach
+                if (!(Get-Module -Name WebAdministration)) {
+                    if (!(Get-Module -ListAvailable -Name WebAdministration)) {
+                        # Try to install the module if not available
+                        Install-WindowsFeature Web-Scripting-Tools -ErrorAction Stop | Out-Null
+                        Import-Module WebAdministration -ErrorAction Stop
+                    }
+                    else {
+                        Import-Module WebAdministration -ErrorAction Stop
+                    }
+                }
+                return $true
+            }
+            catch {
+                "ERROR: Could not import WebAdministration module. $($_.Exception.Message)"
+                "This is required for IIS management. Ensure you are running as Administrator."
+                "You may need to run: Install-WindowsFeature Web-Scripting-Tools -IncludeManagementTools"
+                return $false
+            }
+        }
+    }
 }
 
 # Enable IIS Remote Management Service if not already enabled
@@ -33,7 +78,7 @@ if (-not (Test-ComponentInstalled -Name "IIS Remote Management" -TestScript {
 
 "`r`nURL Rewrite Extension for IIS..."
 
-# Import WebAdministration module safely
+# Import WebAdministration module safely using our improved function
 $webAdminAvailable = Import-WebAdministrationModule
 
 # Continue with IIS setup only if module is available
@@ -157,5 +202,7 @@ if ($webAdminAvailable) {
     }
 } else {
     "WARNING: WebAdministration module could not be loaded. IIS setup will be limited."
-    "Please ensure IIS is installed and you're running as Administrator."
+    "Please ensure IIS is installed with Web-Scripting-Tools feature and you're running as Administrator."
+    "Try running the following command manually before running this script again:"
+    "Install-WindowsFeature -Name Web-Server,Web-Scripting-Tools -IncludeManagementTools"
 }

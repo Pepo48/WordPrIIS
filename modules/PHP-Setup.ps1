@@ -3,6 +3,143 @@
 This module installs and configures PHP 8.4, which is required to run WordPress.
 #>
 
+# Define functions first, then run the script code
+
+# Function to configure PHP optimizations
+function Configure-PHPOptimizations {
+    param (
+        [string]$phpIniPath
+    )
+    
+    Write-Host "Configuring PHP optimizations similar to Plesk..." -ForegroundColor Green
+    
+    # Define optimization block
+    $optimizationBlock = @"
+
+; PHP Performance Optimizations
+; Similar to Plesk optimization settings
+; DO NOT MODIFY THIS SECTION MANUALLY AS IT MAY BE OVERWRITTEN BY FUTURE UPDATES
+
+; Enable JIT compilation and realpath cache
+opcache.huge_code_pages=1
+opcache.interned_strings_buffer=64
+opcache.jit=1254
+opcache.jit_buffer_size=32M
+opcache.max_accelerated_files=1000
+opcache.max_wasted_percentage=15
+opcache.memory_consumption=128
+opcache.revalidate_path=0
+opcache.enable=1
+opcache.enable_cli=0
+
+; Disable open_basedir for better performance (adjust for production environments)
+open_basedir=
+"@
+
+    # Read current PHP.ini content
+    $phpIniContent = Get-Content -Path $phpIniPath -Raw
+    
+    # Check if optimization block already exists
+    if ($phpIniContent -notmatch "PHP Performance Optimizations") {
+        # Append optimization block to php.ini
+        Add-Content -Path $phpIniPath -Value $optimizationBlock
+        Write-Host "PHP performance optimizations added successfully." -ForegroundColor Green
+    } else {
+        Write-Host "PHP performance optimizations already exist in php.ini." -ForegroundColor Yellow
+    }
+}
+
+# Function to set up PHP
+function Setup-PHP {
+    param (
+        [hashtable]$config
+    )
+    
+    # PHP installation path
+    $phpVersion = $config.PHPVersion
+    $phpPath = "C:\Program Files\PHP\$phpVersion"
+    
+    # Check if PHP is already installed
+    $phpInstalled = Test-ComponentInstalled -Name "PHP $phpVersion" -TestScript {
+        Test-Path "$phpPath\php.exe"
+    }
+    
+    if (-not $phpInstalled) {
+        # Download and install PHP
+        $phpZipUrl = "https://windows.php.net/downloads/releases/php-$phpVersion-Win32-VC15-x64.zip"
+        $phpZipFile = "$($config.DownloadPath)\php-$phpVersion.zip"
+        
+        Write-Host "Downloading PHP $phpVersion..."
+        Invoke-WebRequest -Uri $phpZipUrl -OutFile $phpZipFile
+        
+        Write-Host "Extracting PHP files..."
+        if (-not (Test-Path $phpPath)) {
+            New-Item -Path $phpPath -ItemType Directory -Force | Out-Null
+        }
+        Expand-Archive -Path $phpZipFile -DestinationPath $phpPath -Force
+        
+        # Create php.ini file
+        Copy-Item -Path "$phpPath\php.ini-production" -Destination "$phpPath\php.ini" -Force
+        
+        # Configure PHP
+        $phpIni = Get-Content -Path "$phpPath\php.ini" -Raw
+        $phpIni = $phpIni -replace ';extension=mysqli', 'extension=mysqli'
+        $phpIni = $phpIni -replace ';extension=openssl', 'extension=openssl'
+        $phpIni = $phpIni -replace ';extension=gd', 'extension=gd'
+        $phpIni = $phpIni -replace ';extension=mbstring', 'extension=mbstring'
+        $phpIni = $phpIni -replace ';cgi.force_redirect = 1', 'cgi.force_redirect = 0'
+        $phpIni = $phpIni -replace ';fastcgi.impersonate = 1', 'fastcgi.impersonate = 1'
+        $phpIni = $phpIni -replace ';fastcgi.logging = 0', 'fastcgi.logging = 0'
+        $phpIni = $phpIni -replace ';extension=curl', 'extension=curl'
+        $phpIni = $phpIni -replace ';extension=fileinfo', 'extension=fileinfo'
+        $phpIni = $phpIni -replace ';extension=exif', 'extension=exif'
+        
+        Set-Content -Path "$phpPath\php.ini" -Value $phpIni
+        
+        # Set upload size limits
+        (Get-Content -Path "$phpPath\php.ini" -Raw) -replace 'upload_max_filesize = \d+M', 'upload_max_filesize = 64M' | 
+            Set-Content -Path "$phpPath\php.ini"
+        (Get-Content -Path "$phpPath\php.ini" -Raw) -replace 'post_max_size = \d+M', 'post_max_size = 64M' | 
+            Set-Content -Path "$phpPath\php.ini"
+        
+        # Configure PHP in IIS
+        Write-Host "Configuring IIS for PHP..."
+        $phpCgiPath = "$phpPath\php-cgi.exe"
+        
+        # Add PHP to PATH
+        $currentPath = [Environment]::GetEnvironmentVariable("PATH", "Machine")
+        if ($currentPath -notlike "*$phpPath*") {
+            [Environment]::SetEnvironmentVariable("PATH", "$currentPath;$phpPath", "Machine")
+        }
+        
+        # Configure FastCGI in IIS
+        & $env:windir\system32\inetsrv\appcmd.exe set config /section:system.webServer/fastCGI /+[fullPath="`"$phpCgiPath`""]
+        
+        # Add handler mapping
+        & $env:windir\system32\inetsrv\appcmd.exe set config /section:system.webServer/handlers /+[name='PHP_via_FastCGI',path='*.php',verb='*',modules='FastCgiModule',scriptProcessor="`"$phpCgiPath`"",resourceType='Either']
+        
+        Write-Host "PHP $phpVersion installed and configured successfully." -ForegroundColor Green
+    }
+    
+    # Only apply optimizations if enabled in config
+    if ($config.EnablePHPOptimizations) {
+        Configure-PHPOptimizations -phpIniPath "$phpPath\php.ini"
+        
+        # Verify OPcache is enabled
+        if (Test-PHPOPcacheAvailable -phpPath $phpPath) {
+            Write-Host "PHP OPcache is properly configured and enabled." -ForegroundColor Green
+        } else {
+            Write-Host "Warning: PHP OPcache may not be enabled. Performance optimizations may not be active." -ForegroundColor Yellow
+            Write-Host "Try reinstalling PHP with the 'opcache' extension enabled." -ForegroundColor Yellow
+        }
+    } else {
+        Write-Host "PHP performance optimizations skipped per configuration." -ForegroundColor Yellow
+    }
+    
+    return $phpPath
+}
+
+# Script execution starts here
 "`r`nPHP 8.4..."
 
 # Detect if running in a test environment
@@ -75,8 +212,8 @@ if (-not (Test-ComponentInstalled -Name "PHP" -TestScript {
 
     # Set permissions on PHP directories
     if (-not $isTestEnvironment) {
-        icacls "$phpUploadDir" /grant "IUSR:(OI)(CI)(M)" /grant "IIS_IUSRS:(OI)(CI)(M)" /T
-        icacls "$phpLogsDir" /grant "IUSR:(OI)(CI)(M)" /grant "IIS_IUSRS:(OI)(CI)(M)" /T
+        icacls $phpUploadDir /grant 'IUSR:(OI)(CI)(M)' /grant 'IIS_IUSRS:(OI)(CI)(M)' /T
+        icacls $phpLogsDir /grant 'IUSR:(OI)(CI)(M)' /grant 'IIS_IUSRS:(OI)(CI)(M)' /T
     } else {
         "Test environment detected: Skipping permission changes on PHP directories"
     }
@@ -195,74 +332,10 @@ if (-not (Test-ComponentInstalled -Name "PHP" -TestScript {
     } else {
         "Test environment detected: Skipping PHP registration with IIS"
     }
-}
+}  # This closes the 'else' block from the PHP installation check
 
-function Configure-PHPOptimizations {
-    param (
-        [string]$phpIniPath
-    )
-    
-    Write-Host "Configuring PHP optimizations similar to Plesk..." -ForegroundColor Green
-    
-    # Define optimization block
-    $optimizationBlock = @"
-
-; PHP Performance Optimizations
-; Similar to Plesk optimization settings
-; DO NOT MODIFY THIS SECTION MANUALLY AS IT MAY BE OVERWRITTEN BY FUTURE UPDATES
-
-; Enable JIT compilation and realpath cache
-opcache.huge_code_pages=1
-opcache.interned_strings_buffer=64
-opcache.jit=1254
-opcache.jit_buffer_size=32M
-opcache.max_accelerated_files=1000
-opcache.max_wasted_percentage=15
-opcache.memory_consumption=128
-opcache.revalidate_path=0
-opcache.enable=1
-opcache.enable_cli=0
-
-; Disable open_basedir for better performance (adjust for production environments)
-open_basedir=
-"@
-
-    # Read current PHP.ini content
-    $phpIniContent = Get-Content -Path $phpIniPath -Raw
-    
-    # Check if optimization block already exists
-    if ($phpIniContent -notmatch "PHP Performance Optimizations") {
-        # Append optimization block to php.ini
-        Add-Content -Path $phpIniPath -Value $optimizationBlock
-        Write-Host "PHP performance optimizations added successfully." -ForegroundColor Green
-    } else {
-        Write-Host "PHP performance optimizations already exist in php.ini." -ForegroundColor Yellow
-    }
-}
-
-function Setup-PHP {
-    param (
-        [hashtable]$config
-    )
-    
-    # ...existing code...
-    
-    # Existing PHP configuration code
-
-    # Only apply optimizations if enabled in config
-    if ($config.EnablePHPOptimizations) {
-        Configure-PHPOptimizations -phpIniPath "$phpPath\php.ini"
-        
-        # Verify OPcache is enabled
-        if (Test-PHPOPcacheAvailable -phpPath $phpPath) {
-            Write-Host "PHP OPcache is properly configured and enabled." -ForegroundColor Green
-        } else {
-            Write-Host "Warning: PHP OPcache may not be enabled. Performance optimizations may not be active." -ForegroundColor Yellow
-            Write-Host "Try reinstalling PHP with the 'opcache' extension enabled." -ForegroundColor Yellow
-        }
-    } else {
-        Write-Host "PHP performance optimizations skipped per configuration." -ForegroundColor Yellow
-    }
-    
-    # ...existing code...
+# If PHP optimizations are enabled in config, apply them
+if ($config.EnablePHPOptimizations) {
+    $phpPath = "$env:ProgramFiles\PHP\v8.4"
+    Configure-PHPOptimizations -phpIniPath "$phpPath\php.ini"
 }

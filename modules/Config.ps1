@@ -36,7 +36,7 @@ $config = @{
     MaxUploadSize = "20M"
     MemoryLimit = "256M"
     # PHP Performance settings
-    EnablePHPOptimizations = $true
+    EnablePHPOptimizations = $true  # Enable Plesk-like PHP optimizations
     # Win-acme settings
     WinAcmeVersion = "2.2.9.1701"  # Win-acme version
     # Remote access protection

@@ -269,6 +269,11 @@ Common issues:
 2. **Let's Encrypt certificate fails**: Ensure your domain is properly configured and accessible from the internet
 3. **MySQL installation fails**: Check for existing MySQL installations that might conflict
 4. **WordPress fails to connect to database**: Verify MySQL credentials in wp-config.
+5. **"WebAdministration module could not be imported" error**: 
+   - This means IIS Management Tools are not installed
+   - Run the included helper script: `.\install-iis-components.ps1` as Administrator
+   - Or manually install IIS with Management Tools through Server Manager or Windows Features
+   - Restart your PowerShell session after installation
 
 For detailed troubleshooting, check the installation log at the location shown at the end of the script.
 

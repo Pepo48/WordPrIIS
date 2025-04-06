@@ -18,7 +18,7 @@ if (-not (Test-ComponentInstalled -Name "WordPress" -TestScript {
     Expand-Archive $wordpressZip -DestinationPath $iisPath
 
     # Set permissions on WordPress directory
-    icacls "$wordpressPath" /grant "IUSR:(OI)(CI)(M)" /grant "IIS_IUSRS:(OI)(CI)(M)" /T
+    icacls $wordpressPath /grant 'IUSR:(OI)(CI)(M)' /grant 'IIS_IUSRS:(OI)(CI)(M)' /T
 
     # Create wp-config.php file with database credentials and improved security settings
     $wpConfig = @"
