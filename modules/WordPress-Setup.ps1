@@ -5,6 +5,24 @@ and prepares the WordPress installation.
 #>
 
 "`r`nWordPress..."
+
+# Function to create a backup of a WordPress configuration file
+function Backup-ConfigFile {
+    param (
+        [string]$FilePath,
+        [string]$FileType = "Configuration"
+    )
+    
+    if (Test-Path $FilePath) {
+        $backupPath = "$FilePath.backup-$(Get-Date -Format 'yyyyMMdd-HHmmss')"
+        "Creating backup of original $FileType file to $backupPath..."
+        Copy-Item -Path $FilePath -Destination $backupPath -Force
+        "Backup created successfully."
+        return $true
+    }
+    return $false
+}
+
 # Check if WordPress is already installed
 if (-not (Test-ComponentInstalled -Name "WordPress" -TestScript {
     Test-Path -Path "$wordpressPath\wp-config.php"
@@ -21,6 +39,9 @@ if (-not (Test-ComponentInstalled -Name "WordPress" -TestScript {
     icacls $wordpressPath /grant 'IUSR:(OI)(CI)(M)' /grant 'IIS_IUSRS:(OI)(CI)(M)' /T
 
     # Create wp-config.php file with database credentials and improved security settings
+    if (Test-Path "$wordpressPath\wp-config.php") {
+        Backup-ConfigFile -FilePath "$wordpressPath\wp-config.php" -FileType "WordPress config"
+    }
     $wpConfig = @"
 <?php
 /**
@@ -77,6 +98,9 @@ require_once(ABSPATH . 'wp-settings.php');
     Set-Content -Path "$wordpressPath\wp-config.php" -Value $wpConfig
 
     # Create a .htaccess file for WordPress with proper rewrite rules
+    if (Test-Path "$wordpressPath\.htaccess") {
+        Backup-ConfigFile -FilePath "$wordpressPath\.htaccess" -FileType "htaccess"
+    }
     $htaccess = @"
 # BEGIN WordPress
 <IfModule mod_rewrite.c>
@@ -92,6 +116,9 @@ RewriteRule . /index.php [L]
     Set-Content -Path "$wordpressPath\.htaccess" -Value $htaccess
 
     # Create web.config for IIS with improved security settings
+    if (Test-Path "$wordpressPath\web.config") {
+        Backup-ConfigFile -FilePath "$wordpressPath\web.config" -FileType "web.config"
+    }
     $webConfig = @"
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
@@ -132,6 +159,9 @@ RewriteRule . /index.php [L]
     # Check if web.config exists, create it if missing
     if (-not (Test-Path -Path "$wordpressPath\web.config")) {
         "Creating missing web.config file..."
+        if (Test-Path "$wordpressPath\web.config") {
+            Backup-ConfigFile -FilePath "$wordpressPath\web.config" -FileType "web.config"
+        }
         $webConfig = @"
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>

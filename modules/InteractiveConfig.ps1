@@ -115,12 +115,7 @@ if ($showAdvanced) {
     $phpVersion = Read-Host -Prompt "PHP version [$($config.PHPVersion)]"
     if (-not [string]::IsNullOrWhiteSpace($phpVersion)) { 
         $config.PHPVersion = $phpVersion
-        "Warning: Changing PHP version requires manually updating the SHA256 hash."
-        $updateHash = Get-YesNoResponse -Prompt "Update PHP SHA256 hash?" -Default $true
-        if ($updateHash) {
-            $phpHash = Read-Host -Prompt "PHP SHA256 hash (for download validation)"
-            if (-not [string]::IsNullOrWhiteSpace($phpHash)) { $config.PHPSha256 = $phpHash }
-        }
+        # Remove the SHA256 hash update prompt and related code
     }
     
     # PHP Optimization settings

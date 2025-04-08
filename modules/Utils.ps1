@@ -147,3 +147,33 @@ function Test-DomainNameValid {
     
     return $DomainName -match '^[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?)*$'
 }
+
+# Function to backup a configuration file
+function Backup-ConfigurationFile {
+    param (
+        [Parameter(Mandatory=$true)]
+        [string]$FilePath,
+        
+        [string]$BackupSuffix = "backup-$(Get-Date -Format 'yyyyMMdd-HHmmss')",
+        
+        [string]$ComponentName = "Configuration file"
+    )
+    
+    if (Test-Path $FilePath) {
+        $backupPath = "$FilePath.$BackupSuffix"
+        Write-Host "Creating backup of $ComponentName to $backupPath..." -ForegroundColor Cyan
+        try {
+            Copy-Item -Path $FilePath -Destination $backupPath -Force
+            Write-Host "✓ Backup created successfully." -ForegroundColor Green
+            return $true
+        }
+        catch {
+            Write-Host "× Failed to create backup: $($_.Exception.Message)" -ForegroundColor Red
+            return $false
+        }
+    }
+    else {
+        Write-Host "File not found: $FilePath. No backup created." -ForegroundColor Yellow
+        return $false
+    }
+}

@@ -28,6 +28,15 @@ if (-not (Test-ComponentInstalled -Name "MySQL Server" -TestScript {
     # Create data directory
     New-Item -Path $mysqlDataPath -ItemType Directory -Force | Out-Null
 
+    # Backup MySQL config file if it exists
+    $mysqlConfigPath = "$env:ProgramFiles\MySQL\MySQL Server $($config.MySQLVersion)\my.ini"
+    if (Test-Path $mysqlConfigPath) {
+        $backupPath = "$mysqlConfigPath.backup-$(Get-Date -Format 'yyyyMMdd-HHmmss')"
+        "Creating backup of MySQL configuration file to $backupPath..."
+        Copy-Item -Path $mysqlConfigPath -Destination $backupPath -Force
+        "MySQL configuration backup created successfully."
+    }
+
     # Create MySQL configuration file
     $myIniContent = @"
 [mysqld]

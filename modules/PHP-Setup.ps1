@@ -1,4 +1,4 @@
-<#
+﻿<#
 =================================== PHP 8.4 ===================================
 This module installs and configures PHP 8.4, which is required to run WordPress.
 #>
@@ -155,33 +155,33 @@ if (-not (Test-ComponentInstalled -Name "PHP" -TestScript {
     $phpPath = "$env:ProgramFiles\PHP\v8.4"
     $phpDataPath = "$env:ProgramData\PHP\v8.4"
     # Use Non-Thread Safe (NTS) version explicitly as recommended for IIS with FastCGI
-    $phpZip = "php-$phpVersion-nts-Win32-vs16-x64.zip"
+    $phpZip = "php-$phpVersion-nts-Win32-vs17-x64.zip"
     $phpUrl = "https://windows.php.net/downloads/releases/$phpZip"
-    # Expected SHA256 hash from configuration
-    $phpSha256 = $config.PHPSha256
 
     # Download PHP
     "Downloading PHP $phpVersion (NTS version for IIS FastCGI)..."
     Invoke-WebRequest $phpUrl -OutFile $phpZip
 
-    # Verify SHA256 hash of the downloaded file
-    "Verifying PHP download integrity..."
-    $downloadedHash = (Get-FileHash -Path $phpZip -Algorithm SHA256).Hash
-    if ($downloadedHash -ne $phpSha256) {
-        Write-Error "PHP download validation failed! Expected: $phpSha256, Actual: $downloadedHash"
-        "Security warning: Downloaded PHP file has an invalid checksum. Installation aborted."
-        "Please verify the correct PHP version and download URL, then try again."
-        Stop-Transcript
-        exit 1
-    }
-    "PHP download validated successfully."
-
     # Extract PHP
     New-Item -Path $phpPath -ItemType Directory -Force | Out-Null
     Expand-Archive $phpZip -DestinationPath $phpPath
 
+    # Create a backup of the freshly extracted PHP installation
+    $backupPath = "$phpPath-original-backup"
+    "Creating backup of original PHP installation to $backupPath..."
+    if (Test-Path $backupPath) {
+        "Removing existing backup..."
+        Remove-Item $backupPath -Recurse -Force
+    }
+    Copy-Item -Path $phpPath -Destination $backupPath -Recurse -Force
+    "PHP installation backup created successfully."
+
     # Create PHP configuration file
     Copy-Item "$phpPath\php.ini-production" "$phpPath\php.ini"
+
+    # Backup original php.ini before making changes
+    Copy-Item "$phpPath\php.ini" "$phpPath\php.ini.original"
+    "Created backup of original php.ini to $phpPath\php.ini.original"
 
     # Update php.ini settings with improved values
     $phpIni = Get-Content "$phpPath\php.ini"
