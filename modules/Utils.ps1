@@ -1,4 +1,4 @@
-<#
+﻿<#
 ==================== Utility Functions =====================
 Functions used across multiple script modules
 #>

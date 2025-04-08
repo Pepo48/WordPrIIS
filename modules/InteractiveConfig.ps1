@@ -126,9 +126,12 @@ if ($showAdvanced) {
     # PHP Optimization settings
     $config.EnablePHPOptimizations = Get-YesNoResponse -Prompt "Enable PHP performance optimizations (OPcache, JIT)?" -Default $config.EnablePHPOptimizations
     
-    # Win-acme Advanced Settings
-    $winAcmeVersion = Read-Host -Prompt "Win-acme version [$($config.WinAcmeVersion)]"
-    if (-not [string]::IsNullOrWhiteSpace($winAcmeVersion)) { $config.WinAcmeVersion = $winAcmeVersion }
+    # Only prompt for Win-acme version if not using Cloudflare Origin Certificate or Self-signed
+    if (-not ($config.UseHTTPS -and ($config.CertificateType -eq "CloudflareOrigin" -or $config.CertificateType -eq "SelfSigned"))) {
+        # Win-acme Advanced Settings
+        $winAcmeVersion = Read-Host -Prompt "Win-acme version [$($config.WinAcmeVersion)]"
+        if (-not [string]::IsNullOrWhiteSpace($winAcmeVersion)) { $config.WinAcmeVersion = $winAcmeVersion }
+    }
 }
 
 "`r`nConfiguration complete. Proceeding with installation..."
