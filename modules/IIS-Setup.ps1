@@ -1,4 +1,4 @@
-<#
+﻿<#
 ======================== Internet Information Services =========================
 This module installs and configures IIS (Internet Information Services)
 which is the web server that will host the WordPress site.
@@ -65,15 +65,40 @@ function Import-WebAdministrationModule {
 }
 
 # Enable IIS Remote Management Service if not already enabled
-if (-not (Test-ComponentInstalled -Name "IIS Remote Management" -TestScript {
-    $prop = Get-ItemProperty HKLM:\SOFTWARE\Microsoft\WebManagement\Server -Name EnableRemoteManagement -ErrorAction SilentlyContinue
-    $prop -and $prop.EnableRemoteManagement -eq 1
-})) {
-    "Enabling IIS Remote Management..."
-    Set-ItemProperty HKLM:\SOFTWARE\Microsoft\WebManagement\Server EnableRemoteManagement 1
-    Set-Service WMSVC -StartupType Automatic
-    Start-Service WMSVC
-    "IIS Remote Management Enabled."
+"`r`nChecking IIS Remote Management..."
+# First, check if the Web Management Service is installed
+if (-not (Get-Service -Name "WMSVC" -ErrorAction SilentlyContinue)) {
+    "Installing Web Management Service..."
+    try {
+        Install-WindowsFeature -Name Web-Mgmt-Service -ErrorAction Stop | Out-Null
+        "Web Management Service installed."
+    }
+    catch {
+        "ERROR: Failed to install Web Management Service. $($_.Exception.Message)"
+        "Remote management will not be available."
+    }
+}
+
+# Now try to enable remote management if the service exists
+if (Get-Service -Name "WMSVC" -ErrorAction SilentlyContinue) {
+    if (-not (Test-ComponentInstalled -Name "IIS Remote Management" -TestScript {
+        $prop = Get-ItemProperty HKLM:\SOFTWARE\Microsoft\WebManagement\Server -Name EnableRemoteManagement -ErrorAction SilentlyContinue
+        $prop -and $prop.EnableRemoteManagement -eq 1
+    })) {
+        "Enabling IIS Remote Management..."
+        # Make sure the registry key exists
+        if (-not (Test-Path "HKLM:\SOFTWARE\Microsoft\WebManagement\Server")) {
+            New-Item -Path "HKLM:\SOFTWARE\Microsoft\WebManagement\Server" -Force | Out-Null
+        }
+        Set-ItemProperty "HKLM:\SOFTWARE\Microsoft\WebManagement\Server" EnableRemoteManagement 1 -Type DWord
+        Set-Service WMSVC -StartupType Automatic
+        Start-Service WMSVC
+        "IIS Remote Management Enabled."
+    } else {
+        "✓ IIS Remote Management is already enabled."
+    }
+} else {
+    "WARNING: Web Management Service (WMSVC) not found. Remote IIS management will not be available."
 }
 
 "`r`nURL Rewrite Extension for IIS..."
