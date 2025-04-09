@@ -1,4 +1,4 @@
-<#
+﻿<#
 ================================= MySQL Server =================================
 This module installs MySQL Server, creates a database for WordPress,
 and configures the necessary user accounts.

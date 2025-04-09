@@ -1,4 +1,4 @@
-<#
+﻿<#
 ======================== Domain Name Configuration ===========================
 This module configures IIS for custom domain names.
 #>

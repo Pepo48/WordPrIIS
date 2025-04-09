@@ -1,4 +1,4 @@
-<#
+﻿<#
 ================================== WordPress ===================================
 This module downloads and configures WordPress, sets up the IIS website,
 and prepares the WordPress installation.

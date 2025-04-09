@@ -1,4 +1,4 @@
-<#
+﻿<#
 ============================= Summary and Output ==============================
 This module displays configuration information and next steps.
 #>

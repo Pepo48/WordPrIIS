@@ -1,4 +1,4 @@
-<#
+﻿<#
 =================================== Security ===================================
 This module implements security enhancements such as IP restrictions for wp-admin,
 security headers, and firewall configuration.
