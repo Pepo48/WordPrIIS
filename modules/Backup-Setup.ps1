@@ -115,7 +115,7 @@ if (`$mysqlDumpPath) {
             try {
                 `$testResult = & "`$mysqlClientPath" "--user=root" "--password=`$(`$config.MySQLRootPassword)" "--connect-timeout=10" "-e" "SELECT 1;" 2>`$null
                 if (`$testResult -match "1") {
-                    Write-Output "✓ MySQL connection successful!"
+                    Write-Output "MySQL connection successful!"
                     `$mysqlConnected = `$true
                 } else {
                     Write-Output "ERROR: MySQL connection test failed."
