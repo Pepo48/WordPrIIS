@@ -166,20 +166,9 @@ if (-not (Test-ComponentInstalled -Name "PHP" -TestScript {
     New-Item -Path $phpPath -ItemType Directory -Force | Out-Null
     Expand-Archive $phpZip -DestinationPath $phpPath
 
-    # Create a backup of the freshly extracted PHP installation
-    $backupPath = "$phpPath-original-backup"
-    "Creating backup of original PHP installation to $backupPath..."
-    if (Test-Path $backupPath) {
-        "Removing existing backup..."
-        Remove-Item $backupPath -Recurse -Force
-    }
-    Copy-Item -Path $phpPath -Destination $backupPath -Recurse -Force
-    "PHP installation backup created successfully."
-
-    # Create PHP configuration file
+    # Create PHP configuration file and make a backup
+    "Creating and backing up PHP configuration files..."
     Copy-Item "$phpPath\php.ini-production" "$phpPath\php.ini"
-
-    # Backup original php.ini before making changes
     Copy-Item "$phpPath\php.ini" "$phpPath\php.ini.original"
     "Created backup of original php.ini to $phpPath\php.ini.original"
 
