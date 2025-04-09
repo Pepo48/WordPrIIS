@@ -65,17 +65,27 @@ function Get-ServerIPAddress {
     }
     
     Write-Host "Multiple IP addresses found. Please select one:"
+    # Display each IP address with its index
     for ($i = 0; $i -lt $ipAddresses.Count; $i++) {
         Write-Host "[$i] $($ipAddresses[$i].IPAddress) ($($ipAddresses[$i].InterfaceAlias))"
     }
     
-    $selection = Read-Host "Select the IP address to use [0-$($ipAddresses.Count - 1)]"
-    if ($selection -match '^\d+$' -and [int]$selection -ge 0 -and [int]$selection -lt $ipAddresses.Count) {
-        return $ipAddresses[[int]$selection].IPAddress
-    } else {
-        Write-Host "Invalid selection. Using the first IP address."
-        return $ipAddresses[0].IPAddress
+    # Correctly format the prompt with the valid range
+    $maxIndex = $ipAddresses.Count - 1
+    $selection = Read-Host "Select the IP address to use [0-$maxIndex]"
+    
+    # Improved validation to handle input
+    if ($selection -match '^\d+$') {
+        $selectionIndex = [int]$selection
+        if ($selectionIndex -ge 0 -and $selectionIndex -le $maxIndex) {
+            Write-Host "Using IP address: $($ipAddresses[$selectionIndex].IPAddress)" -ForegroundColor Green
+            return $ipAddresses[$selectionIndex].IPAddress
+        }
     }
+    
+    # Fallback with better messaging
+    Write-Host "Invalid selection '$selection'. Using the first IP address: $($ipAddresses[0].IPAddress)" -ForegroundColor Yellow
+    return $ipAddresses[0].IPAddress
 }
 
 # Creates a directory if it doesn't exist and sets IIS permissions
