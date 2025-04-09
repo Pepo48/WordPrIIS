@@ -212,18 +212,55 @@ if ($webAdminAvailable) {
     }
 
     "`r`nVisual C++ Redistributables..."
-    # Check if Visual C++ Redistributable is already installed
+    # Improved check for Visual C++ Redistributable installation with better idempotency
     if (-not (Test-ComponentInstalled -Name "Visual C++ Redistributable 2015-2022" -TestScript {
-        Get-WmiObject -Class Win32_Product | Where-Object { 
+        # Using multiple detection methods for better reliability
+        
+        # Method 1: Check using Win32_Product (can be slow but thorough)
+        $usingWMI = Get-WmiObject -Class Win32_Product -ErrorAction SilentlyContinue | Where-Object { 
             $_.Name -like "Microsoft Visual C++ 2015-2022*" -and $_.Name -like "*x64*" 
         }
+        
+        # Method 2: Check registry for installed packages
+        $using64BitRegistry = Get-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*" -ErrorAction SilentlyContinue | 
+            Where-Object { $_.DisplayName -like "Microsoft Visual C++ 2015-2022*" -and $_.DisplayName -like "*x64*" }
+            
+        # Method 3: Check registry for VC runtime DLL version
+        $vcRuntimeExists = Test-Path "C:\Windows\System32\vcruntime140.dll"
+        
+        if ($vcRuntimeExists) {
+            try {
+                $dllInfo = Get-Item "C:\Windows\System32\vcruntime140.dll" -ErrorAction SilentlyContinue
+                $dllVersion = $dllInfo.VersionInfo.ProductVersion
+                $versionCheck = [System.Version]::Parse($dllVersion) -ge [System.Version]::Parse("14.20")
+            }
+            catch {
+                $versionCheck = $false
+            }
+        }
+        else {
+            $versionCheck = $false
+        }
+        
+        return $usingWMI -or $using64BitRegistry -or $versionCheck
     })) {
         "Installing Visual C++ 2015-2022 Redistributable..."
         $vcRedistUrl = "https://aka.ms/vs/17/release/vc_redist.x64.exe"
         $vcRedistInstaller = "vc_redist_2022_x64.exe"
-        Invoke-WebRequest $vcRedistUrl -OutFile $vcRedistInstaller -ErrorAction Stop
-        Start-Process $vcRedistInstaller "/quiet /norestart" -Wait -NoNewWindow
-        "Visual C++ Redistributable Installation Complete."
+        
+        try {
+            [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+            Invoke-WebRequest $vcRedistUrl -OutFile $vcRedistInstaller -UseBasicParsing -ErrorAction Stop
+            Start-Process $vcRedistInstaller "/quiet /norestart" -Wait -NoNewWindow
+            "Visual C++ Redistributable Installation Complete."
+        }
+        catch {
+            "Warning: Failed to download or install Visual C++ Redistributable: $($_.Exception.Message)"
+            "You may need to install it manually from: https://aka.ms/vs/17/release/vc_redist.x64.exe"
+        }
+    }
+    else {
+        "✓ Visual C++ Redistributable 2015-2022 is already installed."
     }
 } else {
     "WARNING: WebAdministration module could not be loaded. IIS setup will be limited."
