@@ -1,0 +1,26 @@
+{
+  "runner_revision": "2026-11-08.2",
+  "owner_first_run": {
+    "runner_revision": "2026-11-08.1",
+    "iis_discovery_succeeded": true,
+    "profiler_installed": true,
+    "samples": 0,
+    "profiles": 0,
+    "cleanup": {
+      "mu_removed": true,
+      "temporary_worker_access_removed": true,
+      "temporary_code_removed": true
+    },
+    "diagnostic": "curl-transport-or-tls",
+    "limitation": "Combined legacy code cannot distinguish nonzero curl exit from invalid metrics; exact cause unknown."
+  },
+  "verification": {
+    "portable_runner_checks": 98,
+    "real_https_fixture_passed": true,
+    "real_untrusted_certificate_exit_60_preserved": true,
+    "conflicting_default_curlrc_ignored": true,
+    "raw_stderr_headers_body_token_not_exported": true,
+    "insecure_tls_retry": false,
+    "production_rerun_of_revision_2": false
+  }
+}

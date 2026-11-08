@@ -1,0 +1,45 @@
+{
+  "date": "2026-11-08",
+  "runner_revision": "2026-11-08.6",
+  "profile_schema_version": 3,
+  "scope": "Local synthetic target-source fixtures, real PHP includes/WordPress dispatcher and disposable web stage; commercial production plugins and Windows host not profiled here.",
+  "tests": {
+    "resource_assertions": 34,
+    "existing_trace_assertions": 32,
+    "existing_gate_privacy_assertions": 27,
+    "powershell_runner_checks": 119,
+    "authenticated_https_and_tls_failure_regressions": "passed",
+    "php_syntax": "passed"
+  },
+  "wordpress_stage": {
+    "scope": "local Podman WordPress stage only",
+    "authorized_requests": 3,
+    "runner_generated_code": true,
+    "ordinary_and_cookie_requests_not_recorded": true,
+    "invalid_token_not_recorded": true,
+    "unwritable_output_diagnosed_without_recording": true,
+    "callback_and_shutdown_http_attribution": true,
+    "target_file_and_nested_callback_attribution": true,
+    "unchanged_ajax_response": true,
+    "elapsed_ms": [
+      20.829,
+      20.765,
+      20.451
+    ]
+  },
+  "resource_observer_overhead_ms": [
+    0.277,
+    0.311,
+    0.272
+  ],
+  "limits": {
+    "exact_per_file_time": false,
+    "direct_function_profiling": false,
+    "cpu_deltas_process_scope": true,
+    "resource_deltas_inclusive": true,
+    "native_windows_revision6_run": false,
+    "hosted_ci_run": false
+  },
+  "cleanup": "Stage fixture and temporary MU/log cleanup completed; validated separately after test.",
+  "plugin_runtime_modified": false
+}

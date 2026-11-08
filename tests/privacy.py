@@ -33,7 +33,7 @@ def main():
         raise AssertionError('Privacy detector did not reject split words')
     check_text('wordpress.example.com', 'public example', {synthetic})
     files = [ROOT/name for name in ['README.md','TESTSUITE.md','CHANGELOG.md','wordpress-iis.ps1']]
-    for folder in ['config','docs','scripts','modules','tests','container','.github']:
+    for folder in ['config','docs','scripts','modules','tests','container']:
         files.extend(p for p in (ROOT/folder).rglob('*') if p.is_file() and '__pycache__' not in p.parts and not p.name.startswith('local'))
     for path in files:
         check_text(path.relative_to(ROOT).as_posix(), 'source filename')

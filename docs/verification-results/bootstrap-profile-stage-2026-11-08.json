@@ -1,0 +1,20 @@
+{
+  "scope": "local Podman WordPress stage only",
+  "authorized_requests": 3,
+  "ordinary_and_cookie_requests_not_recorded": true,
+  "unchanged_ajax_response": true,
+  "elapsed_ms": [
+    10.014,
+    9.221,
+    10.13
+  ],
+  "validation": {
+    "php_profiler_assertions": 23,
+    "existing_php_audit_assertions": 22,
+    "existing_powershell_audit_assertions": 61,
+    "production_profile_run": false,
+    "production_cache_policy_changed": false
+  },
+  "retained_profile_count": 3,
+  "retention": "Verification assertions and aggregate timings retained; detailed per-request profiles stay in private, untracked reports."
+}

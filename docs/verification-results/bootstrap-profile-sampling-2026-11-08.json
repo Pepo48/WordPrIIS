@@ -1,0 +1,115 @@
+{
+  "date": "2026-11-08",
+  "runner_revision": "2026-11-08.7",
+  "profile_schema_version": 3,
+  "scope": "Local synthetic target-source fixtures with real WordPress dispatcher/PHP includes and web requests. Commercial plugins/production host not executed here.",
+  "tests": {
+    "resource_sampling_assertions": 48,
+    "existing_trace_assertions": 32,
+    "existing_gate_privacy_assertions": 27,
+    "powershell_runner_checks": 119,
+    "authenticated_https_and_tls_rejection": "passed"
+  },
+  "sampling_limits": {
+    "primary_resource_pairs": 64,
+    "nested_resource_pairs": 32,
+    "priority_resource_pairs": 8,
+    "maximum_resource_pairs": 104,
+    "maximum_retained_resource_rows": 48,
+    "nested_scans_per_phase": 32,
+    "maximum_nested_wrappers": 128,
+    "maximum_all_wrappers": 512
+  },
+  "wordpress_stage": {
+    "scope": "local Podman WordPress stage only",
+    "authorized_requests": 3,
+    "runner_generated_code": true,
+    "ordinary_and_cookie_requests_not_recorded": true,
+    "invalid_token_not_recorded": true,
+    "unwritable_output_diagnosed_without_recording": true,
+    "callback_and_shutdown_http_attribution": true,
+    "target_file_and_nested_callback_attribution": true,
+    "late_callback_after_sampling_storm": true,
+    "unchanged_ajax_response": true,
+    "elapsed_ms": [
+      57.256,
+      53.488,
+      53.676
+    ]
+  },
+  "stage_sampling": [
+    {
+      "resource_calls_sampled": 7,
+      "samples_by_bucket": {
+        "primary": 5,
+        "nested": 2,
+        "priority": 0
+      },
+      "budget_skips_by_bucket": {
+        "primary": 78,
+        "nested": 30,
+        "priority": 0
+      },
+      "repeat_calls_skipped": 19999,
+      "nested_scan_count_by_phase": {
+        "plugins_loaded": 32
+      },
+      "nested_scan_cache_hits": 19999,
+      "measurement_overhead_ms": 2.696
+    },
+    {
+      "resource_calls_sampled": 7,
+      "samples_by_bucket": {
+        "primary": 5,
+        "nested": 2,
+        "priority": 0
+      },
+      "budget_skips_by_bucket": {
+        "primary": 78,
+        "nested": 30,
+        "priority": 0
+      },
+      "repeat_calls_skipped": 19999,
+      "nested_scan_count_by_phase": {
+        "plugins_loaded": 32
+      },
+      "nested_scan_cache_hits": 19999,
+      "measurement_overhead_ms": 2.47
+    },
+    {
+      "resource_calls_sampled": 7,
+      "samples_by_bucket": {
+        "primary": 5,
+        "nested": 2,
+        "priority": 0
+      },
+      "budget_skips_by_bucket": {
+        "primary": 78,
+        "nested": 30,
+        "priority": 0
+      },
+      "repeat_calls_skipped": 19999,
+      "nested_scan_count_by_phase": {
+        "plugins_loaded": 32
+      },
+      "nested_scan_cache_hits": 19999,
+      "measurement_overhead_ms": 2.453
+    }
+  ],
+  "regressions": [
+    "20,000 repeated registered nested dispatches use one scan",
+    "early distinct-hook and primary/nested resource quotas saturated before later dynamic fields",
+    "exact Breakdance dynamic-field resource row retained despite same-phase primary quota saturation",
+    "late successful include/class declaration attributed",
+    "callback-count mutation invalidates nested cache; original removal identity preserved",
+    "nested wrapper cap leaves original unwrapped callbacks executable",
+    "response body/status, request exclusion, privacy and temporary cleanup preserved"
+  ],
+  "limitations": [
+    "Resource measurements sample the first invocation per registration; aggregate timings retain later calls",
+    "Same-count callback replacements can escape cached instrumentation",
+    "Remaining caps and dynamic-registration/reference exclusions are explicit",
+    "Fixture timings and observer counters do not establish production overhead",
+    "At this historical fixture run, owner revision-7 verification was pending; later results are summarized in the findings guide. No GitHub workflow is shipped."
+  ]
+}

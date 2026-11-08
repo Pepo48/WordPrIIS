@@ -1,0 +1,11 @@
+{
+  "verified_date": "2026-11-08",
+  "production_profile_files_removed": 5,
+  "fixture_verification_reports_summarized": 4,
+  "runtime_code_changed": false,
+  "retained": "Concise anonymized findings, assertions, outcomes and aggregate timings",
+  "private_untracked": "Full audit reports, callback dumps, per-request profiles and ETLs",
+  "verification": "Package boundary, privacy, documentation links and structural checks passed; no new native Windows or production performance run",
+  "package_assertions": 7,
+  "synthetic_detailed_report_exclusion": "passed"
+}

@@ -1,0 +1,28 @@
+{
+  "scope": "local Podman WordPress stage only",
+  "authorized_requests": 3,
+  "runner_generated_code": true,
+  "ordinary_and_cookie_requests_not_recorded": true,
+  "invalid_token_not_recorded": true,
+  "unwritable_output_diagnosed_without_recording": true,
+  "callback_and_shutdown_http_attribution": true,
+  "unchanged_ajax_response": true,
+  "elapsed_ms": [
+    15.526,
+    14.631,
+    15.873
+  ],
+  "runner_revision": "2026-11-08.5",
+  "validation": {
+    "php_gate_file_privacy_assertions": 27,
+    "real_wordpress_dispatcher_trace_assertions": 32,
+    "powershell_runner_checks": 119,
+    "https_transport_fixture_passed": true,
+    "production_revision_5_run": false,
+    "hosted_ci_executed": false,
+    "staged_http_fixture_preempted_no_external_request": true,
+    "runtime_php_files_changed": false
+  },
+  "retained_profile_count": 3,
+  "retention": "Verification assertions and aggregate timings retained; detailed per-request profiles stay in private, untracked reports."
+}

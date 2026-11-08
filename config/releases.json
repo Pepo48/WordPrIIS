@@ -23,10 +23,6 @@
     "version": "7.6.9",
     "source": "https://api.github.com/repos/PowerShell/PowerShell/releases/latest"
   },
-  "ci_checkout": {
-    "version": "v6",
-    "commit": "d23441a48e516b6c34aea4fa41551a30e30af803"
-  },
   "windows_prerequisites": {
     "vc_runtime": "Current signed Microsoft Visual C++ x64 redistributable; supply local path/hash if required",
     "url_rewrite": "Current signed Microsoft IIS URL Rewrite 2.1 x64; supply local MSI/hash if absent"

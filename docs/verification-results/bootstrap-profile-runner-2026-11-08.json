@@ -1,0 +1,24 @@
+{
+  "scope": "local Podman WordPress stage only",
+  "authorized_requests": 3,
+  "runner_generated_code": true,
+  "ordinary_and_cookie_requests_not_recorded": true,
+  "unchanged_ajax_response": true,
+  "elapsed_ms": [
+    10.643,
+    9.134,
+    10.139
+  ],
+  "runner_revision": "2026-11-08.1",
+  "validation": {
+    "portable_powershell_checks": 88,
+    "additional_windows_acl_checks_saved": 3,
+    "existing_powershell_audit_checks": 61,
+    "windows_iis_runtime_executed": false,
+    "hosted_ci_executed": false,
+    "curl_https_fixture_passed": true,
+    "production_changed": false
+  },
+  "retained_profile_count": 3,
+  "retention": "Verification assertions and aggregate timings retained; detailed per-request profiles stay in private, untracked reports."
+}

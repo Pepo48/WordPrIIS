@@ -1,0 +1,26 @@
+{
+  "date": "2026-11-08",
+  "collector_revision": "2026-11-08.4",
+  "scope": "Fix reproduced PHP helper no-output failure; no production configuration changes",
+  "reproduction": {
+    "php": "8.4 staging runtime",
+    "setting": "variables_order=GP",
+    "before": "exit 0, no output",
+    "after": "JSON result without WordPress bootstrap; child-only register_argc_argv=1 enables root inspection"
+  },
+  "checks": {
+    "php_safety_assertions": 16,
+    "powershell_assertions": 58,
+    "https_workflow": "passed",
+    "git_diff_check": "passed"
+  },
+  "coverage_additions": [
+    "IIS log first/last sample UTC and most recent 5xx UTC",
+    "Bounded System log IIS/WAS event IDs/counts/timestamps without event messages"
+  ],
+  "limits": [
+    "The owner host setting causing the original empty result is not yet directly inspected",
+    "No production IIS/PHP/firewall/cache policy changed",
+    "Windows/IIS event collector changes need a real-host rerun"
+  ]
+}

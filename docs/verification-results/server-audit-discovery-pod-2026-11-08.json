@@ -1,0 +1,25 @@
+{
+  "date": "2026-11-08",
+  "scope": "Audit discovery/diagnostic update and WORDPRIIS pod migration; no production host change",
+  "audit_report_schema": 2,
+  "powershell_logic_assertions": 49,
+  "php_helper_assertions": 10,
+  "https_report_workflow": "passed",
+  "stage_php_assertions": 136,
+  "chromium_fixture_scenarios": 5,
+  "pod": {
+    "name": "wordpriis-stage",
+    "containers": 2,
+    "shared_namespaces": [],
+    "database_network_only": "wordpriis-stage",
+    "database_host_ports": false,
+    "migration_file_record_counts_preserved": true,
+    "stop_start_file_record_counts_preserved": true
+  },
+  "limits": [
+    "Windows/IIS collectors still require a real-host rerun",
+    "No production RDP/SMB/firewall policy changed",
+    "No live caching policy changed",
+    "No new real PayPal payment performed"
+  ]
+}

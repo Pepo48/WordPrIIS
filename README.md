@@ -1,289 +1,120 @@
-# WordPrIIS: WordPress on IIS Automated Installer
+# WordPrIIS
 
-## Overview
+Bootstrap and operate WordPress on Windows/IIS with explicit configuration, standalone PowerShell commands, private diagnostics and measured performance tuning. **This repository is an operations toolkit, not a WordPress plugin.** Keep it outside every web root.
 
-WordPrIIS is a comprehensive PowerShell script that automates the installation and configuration of WordPress on Windows Server 2022 with IIS, PHP 8.4, and MySQL 8.4. It's designed to provide a production-ready WordPress environment with enhanced security features and flexible configuration options.
+The work grew out of a real IIS investigation: a `localhost` database connection added about two seconds, request-triggered cron dispatched a roughly one-second loopback, and a blanket cache header made errors/static-asset failures harder to diagnose. Those first two issues were corrected on the owner’s host; a remaining ~1.2-second uncached PHP bootstrap needs Windows-specific investigation. Plugin timings locate work, not its underlying cause. [Experience and non-sensitive observations](docs/experience.md).
 
-## Features
+All site identities and deployment paths in examples and retained reports are anonymized. Substitute your own verified configuration.
 
-- **Full Stack Installation**: Automatically installs and configures IIS, PHP 8.4, MySQL 8.4, and WordPress
-- **Interactive Configuration**: Customize installation parameters through an interactive prompt
-- **HTTPS Support**: Configures SSL/TTLS with Let's Encrypt certificates, Cloudflare Origin certificates, or self-signed certificates for development
-- **Enhanced Security**:
-  - Security headers configuration (CSP, HSTS, XSS Protection, etc.)
-  - IP restrictions for wp-admin area
-  - Firewall configuration
-  - Optional restrictive mode for production environments
-- **PHP Performance Optimizations**:
-  - OPcache configuration for improved PHP performance
-  - JIT compilation settings for PHP 8.x
-  - Memory and cache optimization settings
-  - Similar to Plesk optimization settings
-- **Domain Management**: Supports custom domains with automatic configuration
-- **Automated Backups**: Schedule regular backups of WordPress files and database
-- **Idempotent Design**: Can be run multiple times without duplicating work
-- **Reversible Changes**: Includes rollback scripts to undo configuration changes
-- **Modular Architecture**: Well-organized code modules for easier maintenance and customization
+## Start with local verification
 
-## Requirements
+Requirements: Podman, Python 3 and Bash. On macOS start the Podman machine first. No Windows host, production database, PayPal credentials or proprietary plugins are needed.
 
-- Windows Server 2022 (may work on Windows 10/11 with appropriate features)
-- PowerShell 5.1 or higher (PowerShell 7.x recommended for best performance)
-- Administrator privileges
-- Internet connection
+```bash
+bash container/verify.sh
+```
 
-## Quick Start
+This builds a checksum-pinned PowerShell 7.6.9 image, runs the real configuration/archive/orchestration functions and the migrated audit/profiler/cron regressions, then checks real PHP/WordPress requests in one disposable **wordpriis-verify** Podman pod. WordPress is published only at `127.0.0.1:8108` during the run. Database access is internal; application mail/outbound HTTP is blocked by a local-only guard. The pod/networks are removed in a trap and reports remain under ignored `.artifacts/`.
 
-### Basic Execution
+**Linux containers cannot validate IIS, Windows ACLs, certificate bindings, Defender recordings or Task Scheduler logon.** Portable tests mock those boundaries; they do not prove a production Windows bootstrap. See [TESTSUITE.md](TESTSUITE.md) for exact coverage, individual commands and native acceptance checks. The latest [namespace-clean verification](docs/verification-results/namespace-cleanup-2026-11-08.json) includes 67 cron setup assertions; earlier saved counts remain historical.
+
+## Inspect a configuration without changing anything
+
+Windows PowerShell **5.1** remains supported on the server. PowerShell 7 can also run portable commands. Copy the example and review it:
 
 ```powershell
-# Run with default settings (interactive mode)
-.\wordpress-iis.ps1
-
-# Run with elevated privileges (recommended)
-powershell -ExecutionPolicy Bypass -File .\wordpress-iis.ps1
-
-# Run in non-interactive mode (uses default values)
-.\wordpress-iis.ps1 -NonInteractive
+Copy-Item .\config\example.json .\config\local.json
+.\wordpress-iis.ps1 -Action Plan -ConfigPath .\config\local.json |
+    ConvertTo-Json -Depth 8
 ```
 
-### Installation Path
+The default action is `Plan`. Configuration has an explicit allowlist: credentials, arbitrary environment variables and unknown fields are rejected. JSON is data, never executable PowerShell. Passwords are supplied through **PSCredential**, not arguments, environment files, transcripts or Git. Only generated private wp-config.php and Windows Task Scheduler’s protected credential store retain credentials needed for operation.
 
-By default, WordPress is installed to:
-- WordPress files: `C:\inetpub\wordpress\`
-- PHP: `C:\Program Files\PHP\v8.4\`
-- MySQL: `C:\Program Files\MySQL\MySQL Server 8.4\`
+For the existing example host, start from `config/existing-site.example.json`. It contains anonymized example paths/domain/account and leaves installer/certificate pins empty. Database/schema/user/prefix entries are placeholders to verify, not values recovered from production secrets. **Do not run Bootstrap against the existing host.**
 
-## Project Structure
+If downloaded scripts are blocked under RemoteSigned, review the extracted trusted bundle and unblock only its `.ps1` files with `Get-ChildItem -LiteralPath . -Recurse -Filter *.ps1 | Unblock-File`. No command changes or bypasses execution policy. An enforced AllSigned policy requires signing through your normal process.
 
-The script is organized into modules for better maintainability:
+## Existing-site operations: one entry point
 
-```
-WordPrIIS/
-├── wordpress-iis.ps1         # Main script
-├── modules/
-│   ├── Config.ps1            # Configuration parameters
-│   ├── Utils.ps1             # Common utility functions
-│   ├── InteractiveConfig.ps1 # Interactive setup
-│   ├── IIS-Setup.ps1         # IIS web server setup
-│   ├── PHP-Setup.ps1         # PHP installation
-│   ├── MySQL-Setup.ps1       # MySQL database setup
-│   ├── WordPress-Setup.ps1   # WordPress core installation
-│   ├── SSL-Setup.ps1         # HTTPS configuration
-│   ├── Domain-Setup.ps1      # Domain name setup
-│   ├── Security.ps1          # Security enhancements
-│   ├── Backup-Setup.ps1      # Backup configuration
-│   ├── Rollback-Scripts.ps1  # Creates scripts to undo changes
-│   └── Summary.ps1           # Installation summary
-├── tests/                    # Testing framework
-└── docs/                     # Additional documentation
-```
-
-## Configuration Options
-
-The main configuration options are defined in `modules/Config.ps1`:
+Run elevated **64-bit PowerShell** on the IIS server. PrivatePath must be a trusted local, unserved directory permitted by web PHP open_basedir. Examples use `C:\WordPrIISPrivate`; replace it with a trusted, PHP-allowed directory on your host.
 
 ```powershell
-$config = @{
-    # WordPress site details
-    SiteName = "WordPress"
-    SitePort = 80
-    # Domain configuration
-    Domain = ""  # Empty string = use IP address, otherwise set domain name
-    UseHTTPS = $true
-    EmailAddress = "admin@example.com"  # Used for Let's Encrypt
-    # Security settings
-    ConfigureFirewall = $true
-    RestrictWPAdmin = $true
-    AllowedIPsForAdmin = @("192.168.1.0/24")
-    FirewallDefaultDeny = $false
-    # Environment toggle
-    DevelopmentMode = $true
-    # And more...
-}
+$cfg = '.\config\local.json'
+.\wordpress-iis.ps1 -Action Audit -ConfigPath $cfg
+.\wordpress-iis.ps1 -Action ExportConfig -ConfigPath $cfg
+.\wordpress-iis.ps1 -Action Profile -ConfigPath $cfg
+.\wordpress-iis.ps1 -Action Diagnose -ConfigPath $cfg -RecordDefender
+.\wordpress-iis.ps1 -Action Verify -ConfigPath $cfg
 ```
 
-Alternatively, the interactive mode will prompt you for these settings during execution.
+| Action | Behavior |
+|---|---|
+| `Plan` | Validate and display desired non-sensitive settings; no host changes or downloads. |
+| `Artifacts` | Download the reviewed PHP/WordPress packages from official HTTPS sources and verify SHA256; no install. |
+| `Bootstrap` | Fresh site/pool/paths only; explicit Windows changes. See below. |
+| `Audit` | Read-only IIS/PHP/cache/security collection and sequential public HTTP probes. Optional `-IncludeDatabase -CompareDatabaseIPv4` adds bounded read-only SQL diagnostics. |
+| `ExportConfig` | Save validated desired settings plus the audit’s allowlisted effective configuration. Does not copy php.ini/wp-config/IIS XML/env wholesale. |
+| `Profile` | Install an expiring token-gated MU probe, collect no-action AJAX timings, remove it and retain a private report. `-BenchmarkFileSystem` adds bounded warm metadata calibration. |
+| `Diagnose` | Audit + profile with metadata calibration; optional timed Defender recording. No exclusions, configuration tuning, service restart or cache flush. |
+| `Cron` | Prove manual/automatic task callbacks before disabling visitor-triggered cron. |
+| `Verify` | HTTPS homepage/AJAX/core CSS/JS/config-denial/missing-asset checks. Does not test the full checkout/editor or guarantee every error’s cache policy. |
 
-## Interactive Configuration Steps Explained
+Each action delegates to a standalone operation script under `scripts/` that accepts `-ConfigPath`. Lower-level engines accept explicit target/runtime parameters; use the dispatcher for the normal workflow. All tooling uses WordPrIIS filenames and protocol identifiers. Use matching helpers/runners from one bundle; previously installed cron runtimes remain independent and must not be partially replaced. No import performs installation.
 
-When running in interactive mode, the script will prompt you for various settings. Here's what each option means:
-
-### Site Configuration
-- **Site name**: The name of your WordPress site in IIS (default: "WordPress")
-- **HTTP port**: The port for HTTP traffic (default: 80)
-- **Domain name**: Your website's domain name (leave empty to use server IP address)
-
-### SSL/HTTPS Configuration
-- **Configure HTTPS?**: Whether to set up SSL/TLS encryption
-- **Certificate options**:
-  1. **Let's Encrypt**: Automatically obtain and renew free certificates (requires public domain)
-  2. **Self-signed**: Create a certificate for development (not trusted by browsers)
-  3. **Cloudflare Origin**: Use certificates from Cloudflare for origin encryption
-- **Email address**: Used for Let's Encrypt registration and expiry notifications (only required when using Let's Encrypt)
-
-### Security Configuration
-- **Configure Windows Firewall?**: Set up firewall rules for web traffic
-- **Block all inbound traffic except allowed ports?**: Create restrictive firewall policy (caution: can block remote access)
-- **Prevent RDP lockout**: Ensures remote desktop access remains available
-- **Restrict wp-admin access by IP address?**: Limit WordPress admin area to specific IP addresses
-- **Allowed IPs for wp-admin**: List of IP addresses/ranges allowed to access admin area
-
-### Environment Configuration
-- **Enable development mode?**: Less strict security settings for development
-
-### Backup Configuration
-- **Configure automated backups?**: Set up scheduled backups of files and database
-- **Backup schedule**: Daily, Weekly, or Monthly backups
-- **Number of backups to retain**: How many backup copies to keep
-- **Backup storage path**: Where to store the backup files
-
-### Advanced Settings
-- **MySQL version**: Which MySQL version to install
-- **PHP version**: Which PHP version to install
-- **Win-acme version**: Which Let's Encrypt client version to use
-- **Enable PHP performance optimizations**: Configure OPcache and JIT compilation for better performance
-
-## Detailed Features
-
-### SSL/HTTPS Configuration
-
-WordPrIIS can automatically configure HTTPS in three ways:
-- **Let's Encrypt**: Free, auto-renewing certificates for public domains
-- **Self-signed**: For development environments (generates browser warnings)
-- **Cloudflare Origin Certificates**: For sites behind Cloudflare proxy
-
-### Security Enhancements
-
-- **Security Headers**: Configures modern web security headers:
-  - Content-Security-Policy: Controls what resources can be loaded
-  - X-Content-Type-Options: Prevents MIME type sniffing
-  - X-Frame-Options: Prevents site from being embedded in frames
-  - X-XSS-Protection: Helps prevent cross-site scripting attacks
-  - Strict-Transport-Security: Forces HTTPS connections
-  - Referrer-Policy: Controls how much referrer information is sent
-  
-- **IP Restrictions**: Limits access to wp-admin to specified IP addresses:
-  - Creates a separate web.config in wp-admin folder
-  - Blocks all IPs except the ones you specify
-  - Provides easy rollback script if you lock yourself out
-  
-- **Firewall Rules**: Configures Windows Firewall for proper web traffic:
-  - Opens HTTP (Port 80): Allows incoming traffic to reach your WordPress site over standard HTTP
-  - Opens HTTPS (Port 443): Enables secure HTTPS connections when SSL is configured
-  - Remote Desktop Protection (Port 3389): Ensures you don't get locked out of your server by preserving RDP access
-  - WinRM Protection (Port 5985): Preserves Windows Remote Management functionality for remote administration
-  - Default Deny Option: Can optionally block all other inbound traffic not explicitly allowed (with safety features to prevent lockout)
-  - Custom Rule Creation: Each rule is created with appropriate names and parameters for easy management
-  - Rollback Scripts: Provides scripts to restore default firewall settings if needed
-  
-- **Remote Access Protection**: Special safeguards to prevent RDP lockout:
-  - Ensures Remote Desktop port remains accessible
-  - Protects Windows Remote Management (WinRM) if needed
-  
-- **Environment-Based Settings**: Different security levels for development vs production:
-  - Stricter Content-Security-Policy in production
-  - HSTS in production mode
-  - Development mode allows more permissive settings for testing
-
-### Backup System
-
-WordPrIIS sets up automated backups with these default settings:
-- **Schedule**: Daily at 3:00 AM (configurable to weekly or monthly)
-- **Retention**: 7 backups (configurable)
-- **Location**: `C:\WordPressBackups\` (configurable)
-- **Content**: Both WordPress files and MySQL database
-- **Process**: Files are compressed and old backups are automatically removed
-
-## Using Without a Domain Name
-
-WordPrIIS fully supports installation without a domain name, using just your server's IP address:
-
-1. When prompted for a domain name during interactive setup, simply leave it blank
-2. The script will automatically configure WordPress to work with your server's IP address
-3. You can access your WordPress site via http://your-server-IP-address/ (or https:// if SSL is enabled)
-
-When you're ready to add a domain name later:
-
-1. Purchase and configure your domain with DNS pointing to your server
-2. Run the script again, this time entering your domain name when prompted
-3. The script will detect the existing WordPress installation and reconfigure it for your domain
-4. Let's Encrypt certificates will be automatically obtained if HTTPS is enabled
-
-This approach allows you to start with a development/testing setup using just an IP address and seamlessly transition to a production environment with a proper domain name without having to reinstall WordPress.
-
-## Management & Rollback
-
-The installation creates several management scripts:
-
-- **Main rollback script**: `C:\inetpub\wordpress\rollback-configuration.ps1`
-- **IP restrictions removal**: `C:\inetpub\wordpress\remove-ip-restrictions.ps1`
-- **Firewall reset**: `C:\inetpub\wordpress\reset-firewall.ps1`
-- **Hosts file cleanup**: `C:\inetpub\wordpress\remove-hosts-entry.ps1`
-
-These scripts allow you to easily undo specific configuration changes if needed.
-
-## Extending and Customizing
-
-The modular architecture makes it easy to customize the installer:
-
-1. Modify the configuration in `modules/Config.ps1` to change default settings
-2. Edit individual module files to customize specific components
-3. Add new module files and import them in the main script to extend functionality
-
-Example of adding a custom module:
+### Windows performance follow-up
 
 ```powershell
-# Create a new module in modules/Custom-Module.ps1
-# Add your custom code to the module
-# Import it in the main script
-. "$ScriptPath\modules\Custom-Module.ps1"
+.\wordpress-iis.ps1 -Action Diagnose -ConfigPath $cfg -RecordDefender
 ```
 
-## Post-Installation Steps
+The private `diagnostics.json` links sibling audit/profile output and optional `defender-private.etl`. The PHP filesystem calibration uses already included files, records aggregate timings for `is_file`, `is_readable` and `realpath`, and exports no file paths/content. It runs after normal profile timing and adds at most a bounded workload, not a disk-throughput test. Defender’s timed parameter is feature-detected; unsupported/failed recording produces an explicit partial result. Raw ETLs can contain host paths/process events; inspect locally and share the JSON summaries after review. [Diagnostic procedure](docs/windows-performance.md).
 
-After running the script, you should:
+### Verified system cron
 
-1. Access your WordPress site at the URL shown at the end of the script
-2. Complete the WordPress setup wizard
-3. Install necessary plugins (security, caching, etc.)
-4. Test your site thoroughly
-5. Apply any additional security hardening measures
+```powershell
+$account = "$env:COMPUTERNAME\wordpress_service"
+$credential = Get-Credential -UserName $account -Message 'Existing cron service account password'
+.\wordpress-iis.ps1 -Action Cron -ConfigPath $cfg -TaskCredential $credential
+```
 
-## Security Recommendations
+The service account must already exist and be allowed scheduled batch logon. It need not be the IIS worker identity. The installer verifies due callbacks through manual and automatic task runs, confirms DISABLE_WP_CRON in web PHP, clears its temporary canary and tests a normal run. The permanent cron-only lock/completion bridge covers wp-cron.php’s early HTTP 200 behavior. Keep the private runtime directory and bridge. Existing tasks/gates are never overwritten. [Cron lifecycle and recovery](docs/windows-cron.md).
 
-Beyond what WordPrIIS sets up automatically, consider these additional measures:
+## Fresh Windows bootstrap
 
-- Keep WordPress core, themes, and plugins updated
-- Use a Web Application Firewall (WAF)
-- Implement a monitoring solution
-- Use a CDN
-- Use strong passwords for all accounts
-- Restrict database access to necessary users
+Use a maintained Windows Server and an existing **empty local** MySQL/MariaDB database (127.0.0.1; remote bootstrap connections are refused without a TLS-aware implementation) plus a valid hostname certificate already installed with its private key in `LocalMachine\My`. Certificate issuance/renewal and database-server installation remain separately managed; the old root-password/MySQL-installer/automatic-firewall flows are retired.
 
-## Troubleshooting
+1. Review `config/local.json`: unique SiteName/AppPool, **new** WordPressPath/PhpPath, trusted PrivatePath, database connection and certificate thumbprint. Bootstrap currently binds HTTPS port 443 only.
+2. Run `Artifacts`. `config/releases.json` pins PHP **8.5.12-1 NTS x64** and WordPress **7.1.4** as reviewed on 8 November 2026; PHP **8.4.27-1** is the supported compatibility choice. To choose it, use its hash and a separate archive path from the lockfile. The Windows `-1` package revision matters even when PHP_VERSION omits it. See [release maintenance](docs/releases.md).
+3. If absent, supply local SHA256-pinned Microsoft **URL Rewrite 2.1 x64** MSI and current Visual C++ x64 runtime paths/hashes. Those optional prerequisite packages must be obtained/verified through Microsoft; the script does not silently run an unpinned installer.
+4. Supply the existing database account credential and run Bootstrap:
 
-Common issues:
+```powershell
+.\wordpress-iis.ps1 -Action Artifacts -ConfigPath $cfg
+$db = Get-Credential -UserName 'wordpress' -Message 'Existing empty WordPress database account'
+.\wordpress-iis.ps1 -Action Bootstrap -ConfigPath $cfg -DatabaseCredential $db
+```
 
-1. **Script fails to run**: Ensure you're running as Administrator and have an internet connection
-2. **Let's Encrypt certificate fails**: Ensure your domain is properly configured and accessible from the internet
-3. **MySQL installation fails**: Check for existing MySQL installations that might conflict
-4. **WordPress fails to connect to database**: Verify MySQL credentials in wp-config.
-5. **"WebAdministration module could not be imported" error**: 
-   - This means IIS Management Tools are not installed
-   - Run the included helper script: `.\install-iis-components.ps1` as Administrator
-   - Or manually install IIS with Management Tools through Server Manager or Windows Features
-   - Restart your PowerShell session after installation
+Bootstrap verifies packages, installs IIS CGI/prerequisites, extracts isolated PHP, generates php.ini, verifies database connectivity/emptiness, extracts WordPress, generates random salts/wp-config.php, and creates the dedicated pool/site/HTTPS binding. It leaves DISABLE_WP_CRON false until the separate verified Cron action. Finish the WordPress web setup using a strong administrator credential, then Verify/Audit/Profile and test backup restoration before exposing the site.
 
-For detailed troubleshooting, check the installation log at the location shown at the end of the script.
+A private bootstrap journal records completed/failing stages without secrets. **Partial bootstrap is not automatically rolled back or safe to rerun over created resources.** Inspect that journal and remove only the owned fresh resources before retrying. Existing sites, pools, PHP installations and database tables are refused, not reconfigured. No `iisreset`, default-site removal, firewall reset, RDP/SMB opening, Defender exclusion or hosts-file edit is performed.
 
-## License
+### Defaults and operational limits
 
-This script is provided as-is under the MIT License.
+- Dedicated ApplicationPoolIdentity, no CLR, x64, one IIS worker; no idle shutdown for that pool. Each FastCGI runtime explicitly selects its own PHPRC and conf.d scan directory. PHP FastCGI request limits match at 10,000; instances use IIS automatic sizing. Capacity/recycling still needs native measurement.
+- OPcache enabled, 256 MiB/20,000 keys, timestamp validation every 60 seconds, JIT disabled. These are measured-compatible starting values, not universal optima. Existing production cache memory is not changed.
+- open_basedir retained with WordPress/private/temp roots. Increasing realpath cache size while it is enabled is not presented as an optimization. The worker gets code read/execute and narrowly scoped writable data directories.
+- WordPress code is deployment-managed. PHP cannot blanket-write core/plugins; dashboard code updates and WP Rocket drop-in installation need a controlled deployment identity/workflow. Test builder output in uploads and WP Rocket cache/config writes. Do not grant the worker full control to make updates “work.”
+- No blanket public Cache-Control header or MIME-map overrides. Successful static assets retain 30-day caching; a status-gated 5xx outbound rule sets no-store when URL Rewrite executes. Pre-pipeline IIS/proxy errors and Cloudflare rules still need direct-origin/edge verification. [Cache policy](docs/cache-policy.md).
+- Configure TLS renewal, least-privilege database access, private/off-host backups with a tested restore, external availability checks and access restricted through the intended management network. This toolkit does not claim to provision every production dependency.
 
-## Acknowledgements
+The [final retention/privacy review](docs/verification-results/final-retention-review-2026-11-08.json) covers tracked files, reachable history and release bundles. Verification summaries are dated records: older versions and assertion counts describe those runs, not the current checkout. Raw reports stay local; retained JSON contains reviewed outcomes, aggregate metrics and synthetic performance evidence.
 
-- WordPress - https://wordpress.org/
-- PHP - https://www.php.net/
-- MySQL - https://www.mysql.com/
-- win-acme - https://github.com/win-acme/win-acme
+## Layout and migration
+
+- `wordpress-iis.ps1`: dispatcher; `scripts/`: standalone operations and migrated diagnostic engines.
+- `modules/`: pure validation/rendering/archive functions; no setup at import time.
+- `config/`: schema examples and reviewed release metadata; no credentials.
+- `tests/`, `container/`: locally invoked portable, PHP/web and HTTPS checks. No GitHub Actions workflows are required or shipped. Windows-specific acceptance remains a manual host/VM check.
+- `docs/`: native runbooks, concise findings/verification summaries, limitations and migration history. Raw production reports, callback dumps and ETLs remain private and untracked.
+
+The previous installer and tests are available in Git history. Old `-NonInteractive` commands and imperative module imports are not supported. This is a deliberate interface change; the previous tests often simulated installation rather than calling real functions. [Migration notes](docs/migration.md), [changelog](CHANGELOG.md).

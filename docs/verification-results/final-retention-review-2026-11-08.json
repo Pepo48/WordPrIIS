@@ -1,0 +1,15 @@
+{
+  "verified_date": "2026-11-08",
+  "scope": "Tracked source, reachable main history and rebuilt distribution bundle",
+  "gitleaks": "No findings in reachable main history, tracked-source snapshot or extracted release bundle",
+  "retention": "No tracked raw logs, ETLs, HARs, private keys or detailed production/fixture profile arrays; reviewed synthetic performance measurements retained where applicable",
+  "references": "Local Markdown targets checked; WordPrIIS namespace and bundle layout checked",
+  "documentation": "README/changelog distinguish historical verification, local tests and pending native acceptance",
+  "raw_output_ignore_checks": 8,
+  "runtime_code_changed": false,
+  "new_native_windows_or_payment_run": false,
+  "limitations": [
+    "Ignored dependencies/local runtime files excluded from tracked-source scanning",
+    "Unreachable historical server objects and external clones are outside this review"
+  ]
+}

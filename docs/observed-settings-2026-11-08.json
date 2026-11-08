@@ -1,0 +1,52 @@
+{
+  "observed_date": "2026-11-08",
+  "provenance": "Owner statements and sanitized production audits/profiles; not a fresh remote export",
+  "iis": {
+    "site": "Example WordPress",
+    "application_path": "/",
+    "pool": "WordPress",
+    "identity_type": "SpecificUser",
+    "account": "wordpress_service"
+  },
+  "paths": {
+    "wordpress": "C:\\inetpub\\wwwroot\\wordpress",
+    "php": "C:\\Program Files\\PHP\\v8.4",
+    "private_output": "C:\\WordPrIISPrivate"
+  },
+  "php": {
+    "language_version_observed": "8.4.27",
+    "windows_package_revision_verified": false,
+    "web_sapi": "cgi-fcgi",
+    "fastcgi_impersonate": false,
+    "open_basedir": [
+      "C:\\inetpub\\wwwroot\\wordpress",
+      "C:\\Windows\\TEMP",
+      "C:\\WordPrIISPrivate"
+    ],
+    "opcache_enabled": true,
+    "opcache_validate_timestamps": true,
+    "opcache_revalidate_freq_seconds": 60,
+    "opcache_cache_full": false,
+    "realpath_cache_used_bytes": 0
+  },
+  "wordpress": {
+    "version_observed": "7.1.4",
+    "external_cron_verified": true,
+    "disable_wp_cron_verified": true
+  },
+  "database": {
+    "local_host_after_owner_fix": "127.0.0.1",
+    "schema_user_and_password": "Not collected in this record"
+  },
+  "cache": {
+    "blanket_one_year_custom_header_previously_observed": true,
+    "separate_static_ttl_days": 30,
+    "origin_edge_error_policy_remediation_verified": false
+  },
+  "management": {
+    "rdp_via_zerotier": "owner-reported",
+    "smb_used": false
+  },
+  "changes_applied_by_refactor": false,
+  "anonymization": "Site name, account and paths are example replacements; versions, timings and boolean observations are retained."
+}

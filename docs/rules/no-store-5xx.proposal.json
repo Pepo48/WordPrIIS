@@ -1,0 +1,16 @@
+{
+  "description": "WORDPRIIS: never cache origin 5xx responses",
+  "expression": "(http.host in {\"wordpress.example.com\" \"www.wordpress.example.com\"} and http.response.code ge 500 and http.response.code le 599)",
+  "action": "set_cache_control",
+  "action_parameters": {
+    "no-store": {"operation": "set", "cloudflare_only": false},
+    "no-cache": {"operation": "set", "cloudflare_only": false},
+    "max-age": {"operation": "set", "value": 0, "cloudflare_only": false},
+    "s-maxage": {"operation": "remove", "cloudflare_only": false},
+    "public": {"operation": "remove", "cloudflare_only": false},
+    "immutable": {"operation": "remove", "cloudflare_only": false},
+    "stale-if-error": {"operation": "remove", "cloudflare_only": false},
+    "stale-while-revalidate": {"operation": "remove", "cloudflare_only": false}
+  },
+  "enabled": true
+}

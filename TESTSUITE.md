@@ -1,129 +1,86 @@
-# WordPrIIS Test Suite
+# WordPrIIS verification
 
-This document provides detailed information about the testing suite for the WordPrIIS script.
+Source and bundle privacy checks run through `scripts/quality.py` and `tests/package.py`. They fingerprint forbidden private deployment identifiers without storing those identifiers in the regression itself. Site names, accounts, domains and client-specific application paths in retained evidence are substituted examples; timing values are preserved.
 
-> **Note:** For a quick overview of testing capabilities and instructions, please refer to the [Testing section in the README.md](README.md#testing).
+## Run everything in containers
 
-## Detailed Test Components
-
-The test suite uses Pester (PowerShell testing framework) to mock system functions and test the script's functionality without making actual changes to the environment. This allows for safe testing of the installation logic.
-
-### Test File Structure
-
-- **WordPrIIS.Tests.ps1**: Main test file that contains test cases for each component
-- **Import-ScriptFunctions.ps1**: Helper script that extracts functions from the main script for isolated testing
-
-### Component Testing
-
-Each major component of the WordPrIIS script is tested individually:
-
-#### Component Detection System
-
-Tests the `Test-ComponentInstalled` function to ensure it correctly identifies whether components are already installed.
-
-```powershell
-Describe "Test-ComponentInstalled Function" {
-    It "Returns true when component is already installed" {
-        # Test implementation
-    }
-    
-    It "Returns false when component is not installed" {
-        # Test implementation
-    }
-}
+```bash
+bash container/verify.sh
 ```
 
-#### Module Testing
+Requires Podman, Bash and Python 3. The harness builds current checksum-pinned PowerShell 7.6.9 on Ubuntu 24.04, runs portable/HTTPS tests, then starts an isolated WordPress 7.1.4/PHP 8.5 + MariaDB 12.3.3 LTS pod. PHP, database and OS images are pinned by digest in `container/images.json` / `Containerfile`; OS security packages resolve from signed Ubuntu repositories during build. The PowerShell release archive is verified against GitHub's published digest.
 
-With the new modular architecture, each module is tested independently:
+No production configuration, credentials or database are loaded. The application guard blocks outbound requests and mail. The database is not published. Only WordPress port 8108 is bound on host loopback. Disposable pod/networks are removed on normal success/failure; an existing namesake pod/network is refused. Forced process/machine termination can leave lab resources; inspect their names/labels before cleanup. Existing application staging is not modified.
 
-- **Config.ps1**: Tests that configuration settings are properly defined
-- **Utils.ps1**: Tests utility functions like `Test-ComponentInstalled` and `Get-YesNoResponse`
-- **IIS-Setup.ps1**: Tests IIS installation and configuration
-- **PHP-Setup.ps1**: Tests PHP download, extraction, and configuration
-- **MySQL-Setup.ps1**: Tests MySQL Server installation and database setup
-- **WordPress-Setup.ps1**: Tests WordPress download, extraction, and configuration
-- **SSL-Setup.ps1**: Tests SSL certificate creation and configuration
-- **Domain-Setup.ps1**: Tests domain name configuration
-- **Security.ps1**: Tests security features including firewall rules and IP restrictions
-- **Backup-Setup.ps1**: Tests backup system configuration
-- **Rollback-Scripts.ps1**: Tests creation of rollback scripts
-- **Summary.ps1**: Tests summary output generation
+Results: ignored `.artifacts/powershell-tests.log`, `https-tests.log`, `php-tests.log`, `profile-stage.json`, `cron-stage.json`, `verification.json`. Full profiles/logs stay local. Saved verification JSON retains assertions, outcomes and aggregate timings, not per-request callback dumps. Package checks enforce that boundary. Saved sanitized [refactor verification](docs/verification-results/wordpriis-refactor-2026-11-08.json) distinguishes actual checks from native Windows follow-up.
 
-### Mocking Strategy
+## Coverage
 
-The tests use extensive mocking to prevent any real system changes:
+| Suite | What it actually exercises |
+|---|---|
+| `tests/core.ps1` | Production config validation, secret/unknown-field rejection, pure Plan/dispatcher, PHP/wp-config/XML rendering, scoped ACL plan, real SHA256/ZIP extraction and traversal/collision rejection; parses shipped PowerShell sources. |
+| `tests/bootstrap.ps1` | Real bootstrap orchestrator, pinned-artifact hashing, native-stage ordering and stop-on-failure journal/privacy. Native host/certificate/IIS installation stages are mocked. |
+| `tests/server-audit.ps1` | Migrated selection, inherited PHP mapping, collector diagnostics, cache classification, DB comparison and PS5.1-compatible helpers. Native collection APIs are mocked where unavailable. |
+| `tests/server-audit.php` | Actual standalone PHP config/database helper behavior and privacy; no application bootstrap. |
+| `tests/server-audit-http.py` | Real trusted HTTPS public/direct-origin probes, 5xx/cache findings, body/cookie exclusion and overwrite protection. |
+| `tests/bootstrap-profile.php` | Authorization/expiry/route/privacy gates, private output readiness/locking and bounded logs. |
+| `tests/bootstrap-trace.php` | Real WordPress WP_Hook dispatcher: timing, return/exception propagation, nesting, removal/object lifetime, HTTP pairing/redaction and caps. |
+| `tests/bootstrap-resources.php` | Real includes/classes/resource deltas, module grouping, 20,000-dispatch storms, later exact Breakdance field reservation, cache invalidation/removal and nested wrapper reservation. Uses synthetic source fixtures, not commercial plugins. |
+| `tests/filesystem-probe.php` | Bounded metadata operations, per-group file cap, deadline, build/SAPI context, no path/content export or mutation. No Windows filesystem claim. |
+| `tests/bootstrap-profile-runner.ps1` | Real temporary-file lifecycle and cleanup with mocked native IIS/ACL/discovery/transport boundaries, including edited/unrelated-file preservation. |
+| `tests/bootstrap-profile-runner-http.py` | Real curl stdin/config handling, expected 400, TLS/public/direct-origin requests and certificate rejection without insecure retry. |
+| `tests/bootstrap-profile-stage.py --runner-code` | Exact runner-generated MU PHP in real web WordPress: unchanged no-action response, ordinary/cookie/token exclusions, file/HTTP/nested attribution, later resources after storms, opt-in metadata calibration and cleanup. |
+| `tests/cron-config.php` | Tokenized config planning, byte preservation, dynamic/conditional/duplicate definition refusal. |
+| `tests/cron-gate.php` | Native PHP child processes: flock non-overlap, fatal handling, independent completion receipts and ordinary-page exclusion. |
+| `tests/cron-setup.ps1` | Real file/atomic config transaction with mocked Windows APIs: manual/automatic/post-change/normal proof ordering, rollback, concurrent edits and task retention if effective rollback is unverified. |
+| `tests/cron-proof.ps1` / `cron-task-definition.ps1` | Exact receipt matching, credentials checked by SID, limited password logon, matching trigger/action limits and no password/policy bypass in action arguments. |
+| `tests/cron-task-http.py` | Real task action against early-200 HTTPS with delayed/missing/fatal/busy completion receipts and expired verification state. |
+| `tests/cron-stage.py` | Actual WordPress due canary callbacks and completion/cleanup in local stage. The stage already has DISABLE_WP_CRON=true; it does not test switching the stage's config. |
 
-1. System commands are mocked to return success without doing anything
-2. File operations are intercepted and simulated
-3. IIS operations are simulated with mock cmdlets
-
-### Key Mocked Functions
+## Individual runs
 
 ```powershell
-# Core system operations
-Mock Start-Process { return @{ ExitCode = 0 } }
-Mock Invoke-WebRequest {}
-Mock Expand-Archive {}
-Mock New-Item { return [PSCustomObject]@{ FullName = $Path } }
-Mock Set-Content {}
-Mock Get-Content { return @("test content") }
-
-# IIS-specific operations
-Mock Get-Website { return @{ Name = "WordPress"; ID = 1; State = "Started" } }
-Mock New-Website {}
-Mock New-WebBinding {}
-
-# Security operations
-Mock New-NetFirewallRule {}
-Mock Set-NetFirewallProfile {}
+pwsh -NoProfile -File .\tests\core.ps1
+pwsh -NoProfile -File .\tests\bootstrap.ps1
+pwsh -NoProfile -File .\tests\server-audit.ps1
+pwsh -NoProfile -File .\tests\bootstrap-profile-runner.ps1
+pwsh -NoProfile -File .\tests\cron-setup.ps1
+pwsh -NoProfile -File .\tests\cron-proof.ps1
+pwsh -NoProfile -File .\tests\cron-task-definition.ps1
 ```
 
-## Running Advanced Test Scenarios
+The PHP dispatcher suites require WordPress files at the expected container path; use the harness instead of running them against a production site. HTTPS fixtures require local Python/OpenSSL/curl/PowerShell and use synthetic credentials only; the verification image supplies these tools. `container/pwsh-host.sh` is a renderer adapter for web integration, not a remote server runner.
 
-For specialized testing scenarios:
-
-```powershell
-# Test specific modules
-Invoke-Pester -Path .\WordPrIIS.Tests.ps1 -TagFilter "MySQL"
-
-# Run tests with detailed output including code coverage
-Invoke-Pester -Path .\WordPrIIS.Tests.ps1 -Output Detailed -CodeCoverage ..\modules\*.ps1
+```bash
+python3 scripts/quality.py
+python3 tests/package.py
 ```
 
-## Updating Tests for Modular Architecture
+The packaging test verifies actual ZIP integrity, manifest hashes and exclusion of local configs/private trace/key files. Quality checks validate JSON, Python/shell syntax, local documentation links and prevent reintroduction of known dangerous production command patterns. They complement real regression behavior; they are not a comprehensive vulnerability scanner. No legacy Pester extraction adapters or installation demonstrations are used. Native boundaries remain explicitly mocked in portable tests; test assertions execute the actual production functions.
 
-When testing the modular architecture:
+## Native Windows acceptance still required
 
-1. Import the specific module you want to test
-2. Create mocks for functions it depends on
-3. Write tests for the functions in that module
-4. Ensure proper assertions to verify functionality
-
-Example for testing a module:
+GitHub Actions workflows are not shipped. Run the portable Windows checks locally in **both** Windows PowerShell 5.1 and installed PowerShell 7:
 
 ```powershell
-BeforeAll {
-    # Import the module to test
-    . "$PSScriptRoot\..\modules\Utils.ps1"
-    
-    # Create necessary mocks
-    Mock Write-Host {}
-}
-
-Describe "Utils Module" {
-    It "Test-ComponentInstalled returns correct results" {
-        # Test implementation
+foreach ($exe in @('powershell.exe', 'pwsh.exe')) {
+    foreach ($test in @('core', 'bootstrap', 'server-audit', 'bootstrap-profile-runner', 'cron-setup', 'cron-proof', 'cron-task-definition')) {
+        & $exe -NoProfile -File (Join-Path $PWD ("tests/$test.ps1"))
+        if ($LASTEXITCODE -ne 0) { throw "Failed: $exe / $test" }
     }
 }
 ```
 
-## Extending the Tests
+These portable checks do **not** create a real IIS installation or Defender/cron task. They complement the native acceptance procedure below.
 
-When adding new functionality to the main script:
+Before promoting the new bootstrap implementation, use an isolated disposable **Windows Server VM**:
 
-1. Create a new module in the modules directory
-2. Update Import-ScriptFunctions.ps1 to include your new functions
-3. Add appropriate mocks for any new cmdlets used
-4. Create new test cases in WordPrIIS.Tests.ps1 or a new test file
-5. Ensure proper assertions are made to verify functionality
+1. Verify official x64 NTS archive hash/signature/provenance, runtime/Rewrite prerequisites and configuration validation; confirm no import/default Plan changes the host.
+2. Provide a fresh empty managed database and valid installed hostname certificate. Bootstrap new paths/site/pool; inspect actual effective FastCGI settings, anonymous identity, runtime files and ACL inheritance. Verify no other site/config/firewall was changed.
+3. Complete WordPress setup. Test HTTPS, permalinks, actual CSS/JS MIME types, config denial, normal uploads and refusal to execute PHP/web.config overrides from uploads. Validate effective status-gated headers on controlled 500/502/503 fixtures and earlier-pipeline errors, including direct origin and Cloudflare.
+4. Test deployment-managed core/plugin updates and WordPress/builder/WP Rocket data writes. Run full application/browser/payment/editor regression tests with the actual plugin stack; the synthetic fixture stage cannot establish compatibility.
+5. Run Audit/ExportConfig/Profile/Diagnose and verify private output, profiler removal and unavailable-recorder reporting. When timed Defender recording is available, correlate actual ETL and request windows; never assume scanner blame from a quiet/failed trace.
+6. Verify the cron task with the real service-account password, batch logon/GPO, automatic triggers, completion receipts, failure/rollback handling and actual web-SAPI flag. Verify credential rotation. The owner's earlier production cron success supports the migrated engine, not all new bootstrap code.
+7. Test backup restoration, TLS renewal, monitoring, failure recovery and restart/worker behavior before production. Failed fresh bootstrap may leave partial owned resources; inspect its journal rather than blindly rerunning or deleting other sites.
+
+Linux Podman containers cannot run Windows IIS or reproduce Windows Defender/filter-driver path costs. Results must never label native setup/security/performance as verified solely because container assertions pass.

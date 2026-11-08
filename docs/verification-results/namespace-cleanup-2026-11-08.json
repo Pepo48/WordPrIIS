@@ -1,0 +1,11 @@
+{
+  "verified_date": "2026-11-08",
+  "scope": "WordPrIIS namespace cleanup; no production task, MU gate or server configuration changed",
+  "container_command": "bash container/verify.sh",
+  "container_exit_code": 0,
+  "cron_setup_assertions": 67,
+  "namespace_safety": "Existing gate signatures from previous and current namespaces are refused before mutation",
+  "protocol_parsing": "Marker lengths derived from matching prefix strings",
+  "privacy_and_package": "Source/bundle legacy-namespace regression and seven package assertions passed",
+  "native_windows": "Not executed in this verification"
+}

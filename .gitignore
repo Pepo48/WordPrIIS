@@ -8,3 +8,13 @@ config/local*.json
 *.key
 .env
 .env.*
+
+# Private diagnostic output and recovery material; retain summaries under docs instead.
+*.log
+*.jsonl
+*.har
+*.etl
+**/wp-config.before.php
+**/request.curl
+**/report.json
+**/audit.json

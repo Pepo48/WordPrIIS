@@ -1,0 +1,33 @@
+{
+  "runner_revision": "2026-11-08.4",
+  "validation": {
+    "portable_runner_checks": 119,
+    "real_child_stdin_bytes_checked": true,
+    "caller_encodings": [
+      "utf-16-with-bom",
+      "utf-8-with-bom"
+    ],
+    "actual_output_encoding": "utf-8-without-bom",
+    "legacy_api_path_simulated": true,
+    "real_https_fixture_passed": true,
+    "malformed_utf16_config_parser_failure_reproduced": true,
+    "test_environment_malformed_config_exit": 26,
+    "windows_powershell_5_1_native_execution": false,
+    "production_revision_4_run": false
+  },
+  "owner_observation": {
+    "revision": "2026-11-08.3",
+    "output_under_configured_allowed_tree": true,
+    "curl_exit": 2,
+    "sample_count": 0,
+    "all_cleanup_flags_true": true,
+    "exact_stderr_and_encoding_unknown": true
+  },
+  "security": {
+    "token_in_process_arguments": false,
+    "token_config_file_created": false,
+    "raw_stderr_exported": false,
+    "permanent_encoding_or_policy_change": false,
+    "insecure_tls_retry": false
+  }
+}

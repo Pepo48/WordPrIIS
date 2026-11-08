@@ -16,6 +16,6 @@ report = {'schema_version': 1, 'scope': 'Disposable Linux containers; no Windows
           'https_transport': 'passed', 'profile_stage': {k: v for k, v in profile.items() if k != 'profiles'},
           'filesystem_probe_web_sapi': [p['filesystem_probe']['sapi'] for p in profile['profiles']],
           'cron_stage': cron, 'native_windows': 'pending; Linux container tests do not run IIS',
-          'hosted_ci': 'not run in this session'}
+          'hosted_ci': 'not configured; use local verification'}
 (artifacts / 'verification.json').write_text(json.dumps(report, indent=2) + '\n')
 print(json.dumps({'assertions': counts, 'profile_requests': profile['authorized_requests'], 'native_windows': 'pending'}, indent=2))

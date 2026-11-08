@@ -1,0 +1,82 @@
+[
+  {
+    "path": "/wp-content/plugins/custom-plugin/assets/js/modules/logger.js?wordpriis_cache_probe=1794096912",
+    "status": 200,
+    "headers": {
+      "content-type": "application/javascript",
+      "cache-control": "public, max-age=31536000",
+      "cf-cache-status": "MISS",
+      "server": "cloudflare",
+      "last-modified": "Sat, 07 Nov 2026 22:39:07 GMT",
+      "etag": "\"89d7e6cc86fdd1:0\""
+    }
+  },
+  {
+    "path": "/wp-content/plugins/custom-plugin/assets/css/configurator.bundle.css?wordpriis_cache_probe=1794096912",
+    "status": 200,
+    "headers": {
+      "content-type": "text/css",
+      "cache-control": "public, max-age=31536000",
+      "cf-cache-status": "MISS",
+      "server": "cloudflare",
+      "last-modified": "Sat, 07 Nov 2026 22:39:07 GMT",
+      "etag": "\"742ae6cc86fdd1:0\""
+    }
+  },
+  {
+    "path": "/wp-content/plugins/custom-plugin/assets/css/wordpriis-missing-cache-probe-1794096912.css",
+    "status": 404,
+    "headers": {
+      "content-type": "text/html",
+      "cache-control": "public, max-age=31536000",
+      "cf-cache-status": "MISS",
+      "server": "cloudflare"
+    }
+  },
+  {
+    "path": "/wp-includes/js/jquery/jquery.min.js?wordpriis_cache_probe=1794096912",
+    "status": 200,
+    "headers": {
+      "content-type": "application/javascript",
+      "cache-control": "public, max-age=31536000",
+      "cf-cache-status": "MISS",
+      "server": "cloudflare",
+      "last-modified": "Wed, 09 Apr 2025 11:38:58 GMT",
+      "etag": "\"69c9acfb43a9db1:0\""
+    }
+  },
+  {
+    "path": "/wp-json/",
+    "status": 200,
+    "headers": {
+      "content-type": "application/json; charset=UTF-8",
+      "cache-control": "public, max-age=31536000",
+      "cf-cache-status": "DYNAMIC",
+      "server": "cloudflare"
+    }
+  },
+  {
+    "path": "/wp-admin/admin-ajax.php",
+    "status": 400,
+    "headers": {
+      "content-type": "text/html; charset=UTF-8",
+      "cache-control": "no-cache, must-revalidate, max-age=0, no-store, private,public, max-age=31536000",
+      "expires": "Wed, 11 Jan 1984 05:00:00 GMT",
+      "cf-cache-status": "DYNAMIC",
+      "server": "cloudflare"
+    }
+  },
+  {
+    "path": "/wp-content/plugins/custom-plugin/assets/js/modules/logger.js?ver=1794091147",
+    "status": 200,
+    "headers": {
+      "content-type": "application/javascript",
+      "cache-control": "public, max-age=31536000",
+      "age": "173",
+      "cf-cache-status": "HIT",
+      "server": "cloudflare",
+      "last-modified": "Sat, 07 Nov 2026 22:39:07 GMT",
+      "etag": "\"89d7e6cc86fdd1:0\""
+    }
+  }
+]

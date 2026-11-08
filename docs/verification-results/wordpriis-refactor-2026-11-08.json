@@ -1,0 +1,93 @@
+{
+  "schema_version": 1,
+  "scope": "Disposable Linux containers; no Windows services, app pool, ACLs, TLS binding or production site changed",
+  "runtime_pins": {
+    "reviewed": "2026-11-08",
+    "wordpress": "docker.io/library/wordpress@sha256:0bdf00b66e5e61d8aebbf089e8a244fd87c3c49edca7c187393ffd2485daa53b",
+    "wordpress_version": "7.1.4",
+    "php_branch": "8.5",
+    "database": "docker.io/library/mariadb@sha256:5670cdd45526f77299085f699becf9d31a0244316a4d39c2fb4a60fc17c80f80",
+    "database_version": "12.3.3 LTS",
+    "powershell": "7.6.9"
+  },
+  "assertions": {
+    "WordPrIIS core": 87,
+    "WordPrIIS bootstrap": 20,
+    "Server audit PowerShell": 61,
+    "Bootstrap runner": 119,
+    "Cron setup": 65,
+    "Cron proof": 11,
+    "Cron task definition": 7,
+    "Server audit PHP": 23,
+    "Bootstrap profiler": 27,
+    "Bootstrap trace": 32,
+    "Bootstrap resources": 48,
+    "Filesystem probe": 10,
+    "Cron config": 17,
+    "Cron gate": 10
+  },
+  "https_transport": "passed",
+  "profile_stage": {
+    "scope": "local Podman WordPress stage only",
+    "authorized_requests": 3,
+    "runner_generated_code": true,
+    "ordinary_and_cookie_requests_not_recorded": true,
+    "invalid_token_not_recorded": true,
+    "unwritable_output_diagnosed_without_recording": true,
+    "callback_and_shutdown_http_attribution": true,
+    "target_file_and_nested_callback_attribution": true,
+    "late_callback_after_sampling_storm": true,
+    "unchanged_ajax_response": true,
+    "elapsed_ms": [
+      57.306,
+      64.997,
+      56.996
+    ]
+  },
+  "filesystem_probe_web_sapi": [
+    "apache2handler",
+    "apache2handler",
+    "apache2handler"
+  ],
+  "cron_stage": {
+    "scope": "local WordPress stage only; existing DISABLE_WP_CRON=true retained",
+    "checks": [
+      {
+        "phase": "before",
+        "canary_executed": true,
+        "php_completed": true,
+        "disable_wp_cron": true
+      },
+      {
+        "phase": "after",
+        "canary_executed": true,
+        "php_completed": true,
+        "disable_wp_cron": true
+      },
+      {
+        "phase": "cleanup",
+        "canary_executed": true,
+        "php_completed": true,
+        "disable_wp_cron": true
+      }
+    ],
+    "synthetic_events_cleared": true,
+    "wp_config_edited": false,
+    "real_windows_task_registered": false
+  },
+  "native_windows": "pending; Linux container tests do not run IIS",
+  "hosted_ci": "not run in this session",
+  "verified_date": "2026-11-08",
+  "database_preflight_checks": 4,
+  "total_assertions_excluding_database": 537,
+  "native_bootstrap_status": "not executed; isolated Windows VM acceptance required",
+  "production_changed": false,
+  "targeted_follow_up": [
+    "Final loopback-only bootstrap guard passed 20 container assertions",
+    "Explicit FastCGI PHPRC/scan directory and final config/archive/dispatch/parser checks passed 87 container assertions",
+    "Generic WordPress core-asset audit HTTPS checks passed after removing WORDPRIIS asset dependency",
+    "Package integrity/manifest/privacy checks passed 5 assertions"
+  ],
+  "package_assertions": 5,
+  "quality_checks": "JSON/Python/shell/docs/legacy-pattern checks passed"
+}

@@ -1,0 +1,18 @@
+{
+  "date": "2026-11-08",
+  "collector_revision": "2026-11-08.3",
+  "scope": "PowerShell 5.1 compatibility corrections prompted by owner report; no production changes",
+  "powershell_logic_assertions": 55,
+  "https_report_workflow": "passed",
+  "local_runtime": "PowerShell 7.4.22 macOS ARM64",
+  "changes": [
+    "Site ranking reads hashtable keys without property cmdlet adaptation",
+    "TLS names accept dictionary and native objects; independent cipher/protocol coverage",
+    "Granular IIS discovery stage plus safe line/command/recognized-error metadata"
+  ],
+  "limits": [
+    "Exact original failing statement was not captured by the uploaded revision",
+    "Windows PowerShell 5.1 host rerun still required",
+    "No firewall, IIS or edge policy modified"
+  ]
+}

@@ -1,0 +1,32 @@
+{
+  "scope": "local Podman WordPress stage only",
+  "authorized_requests": 3,
+  "runner_generated_code": true,
+  "ordinary_and_cookie_requests_not_recorded": true,
+  "invalid_token_not_recorded": true,
+  "unwritable_output_diagnosed_without_recording": true,
+  "unchanged_ajax_response": true,
+  "elapsed_ms": [
+    10.114,
+    10.313,
+    10.522
+  ],
+  "runner_revision": "2026-11-08.3",
+  "validation": {
+    "portable_powershell_checks": 110,
+    "php_profiler_assertions": 27,
+    "real_https_metadata_privacy_passed": true,
+    "windows_anonymous_identity_and_acl_runtime_executed": false,
+    "production_revision_3_run": false
+  },
+  "owner_revision_2_observation": {
+    "sample_status": 400,
+    "ttfb_ms": 2497.576,
+    "profile_count": 0,
+    "reason": "profile-record-missing",
+    "all_cleanup_flags_true": true,
+    "identity_mismatch_confirmed": false
+  },
+  "retained_profile_count": 3,
+  "retention": "Verification assertions and aggregate timings retained; detailed per-request profiles stay in private, untracked reports."
+}

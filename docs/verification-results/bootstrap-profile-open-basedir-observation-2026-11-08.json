@@ -1,0 +1,17 @@
+{
+  "runner_revision": "2026-11-08.3",
+  "scope": "Sanitized owner-provided result; not a host run from this workspace.",
+  "observed": {
+    "http_status": 400,
+    "ttfb_ms": 5524.915,
+    "cache_status": "DYNAMIC",
+    "profiler_status": "output-unavailable",
+    "web_impersonation": "disabled",
+    "web_open_basedir": "enabled",
+    "anonymous_and_pool_sid_match": true,
+    "profile_count": 0,
+    "all_cleanup_flags_true": true
+  },
+  "inference": "Default ProgramData output may be outside allowed PHP trees; exact allowed paths and failed filesystem check not yet established.",
+  "production_configuration_changed": false
+}

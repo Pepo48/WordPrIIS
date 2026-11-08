@@ -1,0 +1,16 @@
+{
+  "date": "2026-11-08",
+  "collector_revision": "2026-11-08.6",
+  "scope": "Read-only localhost/IPv4 comparison; no production settings changed",
+  "checks": {
+    "powershell_assertions": 61,
+    "php_assertions": 22,
+    "same_instance_identity_comparison": "passed on disposable MariaDB stage",
+    "mismatched_identity_rejected": true,
+    "https_report_workflow": "passed"
+  },
+  "limits": [
+    "IPv4 performance comparison still requires actual-host run",
+    "No wp-config.php, database grants, IIS, firewall or cache policy changed"
+  ]
+}

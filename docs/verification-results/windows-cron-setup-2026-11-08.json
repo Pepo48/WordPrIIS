@@ -1,0 +1,72 @@
+{
+  "date": "2026-11-08",
+  "scope": "Local regression and disposable WordPress stage; no production installation",
+  "tests": {
+    "config_php_assertions": 17,
+    "gate_php_assertions": 10,
+    "setup_transaction_assertions": 65,
+    "proof_matching_assertions": 11,
+    "credential_task_definition_assertions": 7,
+    "existing_profiler_runner_assertions": 119,
+    "existing_profiler_https": "passed"
+  },
+  "https_task_fixture": {
+    "scope": "local HTTPS fixture; real task action, no Windows registration",
+    "checks": [
+      {
+        "case": "normal",
+        "http_200_is_not_job_proof": false,
+        "status": "complete",
+        "exit_code": 0,
+        "config_cleared": true
+      },
+      {
+        "case": "missing",
+        "http_200_is_not_job_proof": true,
+        "status": "failed",
+        "exit_code": 1,
+        "config_cleared": true
+      },
+      {
+        "case": "fatal",
+        "http_200_is_not_job_proof": false,
+        "status": "failed",
+        "exit_code": 1,
+        "config_cleared": true
+      },
+      {
+        "case": "busy",
+        "http_200_is_not_job_proof": false,
+        "status": "busy",
+        "exit_code": 0,
+        "config_cleared": true
+      },
+      {
+        "case": "expired-verification",
+        "http_200_is_not_job_proof": false,
+        "status": "complete",
+        "exit_code": 0,
+        "config_cleared": true
+      }
+    ],
+    "token_not_exported": true
+  },
+  "wordpress_stage": {
+    "phases": [
+      "before",
+      "after",
+      "cleanup"
+    ],
+    "canary_callbacks_executed": true,
+    "php_completion_verified": true,
+    "synthetic_events_cleared": true,
+    "existing_disable_wp_cron": true,
+    "wp_config_edited": false
+  },
+  "limitations": [
+    "Windows scheduler/IIS/ACL APIs mocked in portable transaction tests",
+    "Native Windows task registration, password logon, ACLs and automatic trigger require guarded server installation",
+    "Hosted Windows PowerShell 5.1/7 CI not run in this session"
+  ],
+  "wordpriis_modified": false
+}

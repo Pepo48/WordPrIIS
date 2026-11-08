@@ -1,0 +1,16 @@
+{
+  "date": "2026-11-08",
+  "collector_revision": "2026-11-08.5",
+  "scope": "Separate DB connection/query and PHP helper timing; no production changes",
+  "checks": {
+    "powershell_assertions": 59,
+    "php_assertions": 18,
+    "successful_read_only_db_timing": "passed against disposable MariaDB stage using temporary PHP container",
+    "https_report_workflow": "passed"
+  },
+  "limits": [
+    "New timing fields require another actual-host run",
+    "SELECT 1 timing is not a WordPress query profile",
+    "No DB_HOST, PHP, IIS, firewall or cache settings changed"
+  ]
+}

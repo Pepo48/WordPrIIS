@@ -1,0 +1,15 @@
+{
+  "date": "2026-11-08",
+  "scope": "Local portable audit-tool validation; no production or Windows/IIS collector execution",
+  "powershell": "7.4.22 macOS ARM64; official archive SHA256 verified",
+  "php": "Existing PHP 8.4 staging container",
+  "checks": {
+    "powershell_logic_assertions": 15,
+    "php_safety_assertions": 10,
+    "https_fixture": "passed: public/direct-origin, 503/cache conflicts, report privacy, overwrite protection",
+    "php_lint": "passed",
+    "runtime_zip_excludes_audit_tools": true,
+    "git_diff_check": "passed"
+  },
+  "windows_ci": "Historical CI proposal was not hosted-run and is no longer shipped; current host-test instructions are maintained in WordPrIIS TESTSUITE.md"
+}

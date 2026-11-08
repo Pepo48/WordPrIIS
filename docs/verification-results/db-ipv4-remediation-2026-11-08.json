@@ -1,0 +1,115 @@
+{
+  "date": "2026-11-08",
+  "scope": "Owner-supplied post-change DB report plus three fresh public GET samples per route; no assistant production configuration change",
+  "database": {
+    "before_connect_ms": 2053.259,
+    "after_connect_ms": 1.049,
+    "after_target_kind": "loopback_ipv4",
+    "after_query_batch_ms": 7.183,
+    "after_helper_process_ms": 222.43,
+    "identity_matches_previous_comparison": true
+  },
+  "http_after": {
+    "scope": "Fresh public GETs after owner changed DB_HOST; no proof of WP Rocket bypass, cache status retained",
+    "samples": [
+      {
+        "kind": "page",
+        "sample": 1,
+        "status": 200,
+        "ttfb_ms": 2494.6,
+        "total_ms": 2498.44,
+        "headers": {
+          "content-type": "text/html; charset=UTF-8",
+          "cache-control": "public, max-age=31536000",
+          "cf-cache-status": "DYNAMIC"
+        }
+      },
+      {
+        "kind": "page",
+        "sample": 2,
+        "status": 200,
+        "ttfb_ms": 1488.91,
+        "total_ms": 1493.07,
+        "headers": {
+          "content-type": "text/html; charset=UTF-8",
+          "cache-control": "public, max-age=31536000",
+          "cf-cache-status": "DYNAMIC"
+        }
+      },
+      {
+        "kind": "page",
+        "sample": 3,
+        "status": 200,
+        "ttfb_ms": 1469.95,
+        "total_ms": 1474.27,
+        "headers": {
+          "content-type": "text/html; charset=UTF-8",
+          "cache-control": "public, max-age=31536000",
+          "cf-cache-status": "DYNAMIC"
+        }
+      },
+      {
+        "kind": "ajax",
+        "sample": 1,
+        "status": 400,
+        "ttfb_ms": 1155.12,
+        "total_ms": 1157.04,
+        "headers": {
+          "content-type": "text/html; charset=UTF-8",
+          "cache-control": "no-cache, must-revalidate, max-age=0, no-store, private,public, max-age=31536000",
+          "cf-cache-status": "DYNAMIC"
+        }
+      },
+      {
+        "kind": "ajax",
+        "sample": 2,
+        "status": 400,
+        "ttfb_ms": 1176.71,
+        "total_ms": 1177.24,
+        "headers": {
+          "content-type": "text/html; charset=UTF-8",
+          "cache-control": "no-cache, must-revalidate, max-age=0, no-store, private,public, max-age=31536000",
+          "cf-cache-status": "DYNAMIC"
+        }
+      },
+      {
+        "kind": "ajax",
+        "sample": 3,
+        "status": 400,
+        "ttfb_ms": 1174.02,
+        "total_ms": 1175.33,
+        "headers": {
+          "content-type": "text/html; charset=UTF-8",
+          "cache-control": "no-cache, must-revalidate, max-age=0, no-store, private,public, max-age=31536000",
+          "cf-cache-status": "DYNAMIC"
+        }
+      }
+    ],
+    "summary": [
+      {
+        "kind": "page",
+        "median_ttfb_ms": 1488.91,
+        "samples_ms": [
+          2494.6,
+          1488.91,
+          1469.95
+        ]
+      },
+      {
+        "kind": "ajax",
+        "median_ttfb_ms": 1174.02,
+        "samples_ms": [
+          1155.12,
+          1176.71,
+          1174.02
+        ]
+      }
+    ]
+  },
+  "limits": [
+    "Before/after HTTP observations are small samples from different runs/clients, not a controlled load test",
+    "Cloudflare DYNAMIC is not proof that every WordPress cache was bypassed",
+    "Blanket one-year IIS custom header remains in public responses",
+    "About 1.2 seconds of AJAX response time remains unexplained"
+  ]
+}
