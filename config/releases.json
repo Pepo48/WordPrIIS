@@ -1,0 +1,35 @@
+{
+  "reviewed_utc": "2026-11-08",
+  "php": {
+    "recommended": {
+      "version": "8.5.12-1",
+      "url": "https://downloads.php.net/~windows/releases/php-8.5.12-1-nts-Win32-vs17-x64.zip",
+      "sha256": "2a36a2edcb7a5b9252f638fd5e4cf84d7f6e066092654220dc0b63e5cf4e9723"
+    },
+    "compatibility_branch": {
+      "version": "8.4.27-1",
+      "url": "https://downloads.php.net/~windows/releases/php-8.4.27-1-nts-Win32-vs17-x64.zip",
+      "sha256": "dbae154a0a89791f36c3d48e68bae797878333e7d6cb5721e74617de59b63ab7"
+    },
+    "source": "https://downloads.php.net/~windows/releases/releases.json"
+  },
+  "wordpress": {
+    "version": "7.1.4",
+    "url": "https://downloads.wordpress.org/release/wordpress-7.1.4.zip",
+    "sha256": "a147146c159362778ecbbbfb07bb20ddf4e85b130f971c824e656a8f938c5f87",
+    "checksum_provenance": "Computed locally from the official HTTPS release; not a separately published vendor SHA256 signature"
+  },
+  "powershell": {
+    "version": "7.6.9",
+    "source": "https://api.github.com/repos/PowerShell/PowerShell/releases/latest"
+  },
+  "ci_checkout": {
+    "version": "v6",
+    "commit": "d23441a48e516b6c34aea4fa41551a30e30af803"
+  },
+  "windows_prerequisites": {
+    "vc_runtime": "Current signed Microsoft Visual C++ x64 redistributable; supply local path/hash if required",
+    "url_rewrite": "Current signed Microsoft IIS URL Rewrite 2.1 x64; supply local MSI/hash if absent"
+  },
+  "database": "Existing maintained MySQL/MariaDB; old hard-coded MySQL installer retired"
+}

@@ -1,0 +1,23 @@
+{
+  "SchemaVersion": 1,
+  "SiteName": "WordPress",
+  "Url": "https://wordpress.example.com",
+  "WordPressPath": "C:\\inetpub\\wordpress",
+  "PhpPath": "C:\\Program Files\\PHP\\WordPrIIS",
+  "PrivatePath": "C:\\ProgramData\\WordPrIIS",
+  "AppPool": "WordPress",
+  "ServiceAccountName": "wordpress_service",
+  "DatabaseHost": "127.0.0.1",
+  "DatabaseName": "wordpress",
+  "DatabaseUser": "wordpress",
+  "TablePrefix": "wp_",
+  "CertificateThumbprint": "",
+  "PhpArchivePath": "C:\\Installers\\php-8.5.12-1-nts-x64.zip",
+  "PhpArchiveSha256": "2a36a2edcb7a5b9252f638fd5e4cf84d7f6e066092654220dc0b63e5cf4e9723",
+  "WordPressArchivePath": "C:\\Installers\\wordpress-7.1.4.zip",
+  "WordPressArchiveSha256": "a147146c159362778ecbbbfb07bb20ddf4e85b130f971c824e656a8f938c5f87",
+  "UrlRewriteMsiPath": "",
+  "UrlRewriteMsiSha256": "",
+  "VcRuntimePath": "",
+  "VcRuntimeSha256": ""
+}

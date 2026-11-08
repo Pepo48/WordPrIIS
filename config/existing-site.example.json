@@ -1,0 +1,23 @@
+{
+  "SchemaVersion": 1,
+  "SiteName": "Example WordPress",
+  "Url": "https://wordpress.example.com",
+  "WordPressPath": "C:\\inetpub\\wwwroot\\wordpress",
+  "PhpPath": "C:\\Program Files\\PHP\\v8.4",
+  "PrivatePath": "C:\\WordPrIISPrivate",
+  "AppPool": "WordPress",
+  "ServiceAccountName": "wordpress_service",
+  "DatabaseHost": "127.0.0.1",
+  "DatabaseName": "wordpress",
+  "DatabaseUser": "wordpress",
+  "TablePrefix": "wp_",
+  "CertificateThumbprint": "",
+  "PhpArchivePath": "",
+  "PhpArchiveSha256": "",
+  "WordPressArchivePath": "",
+  "WordPressArchiveSha256": "",
+  "UrlRewriteMsiPath": "",
+  "UrlRewriteMsiSha256": "",
+  "VcRuntimePath": "",
+  "VcRuntimeSha256": ""
+}

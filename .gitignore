@@ -1,0 +1,10 @@
+.artifacts/
+__pycache__/
+*.pyc
+config/local*.json
+*.etl
+*.pfx
+*.pem
+*.key
+.env
+.env.*
