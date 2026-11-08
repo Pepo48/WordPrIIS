@@ -1,0 +1,12 @@
+FROM docker.io/library/ubuntu@sha256:19cad59657037cffa0ac9a48107019b768900ff1071140965827513ac866bd5e
+RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-recommends ca-certificates curl python3 libicu74 libssl3t64 libgssapi-krb5-2 libstdc++6 zlib1g && rm -rf /var/lib/apt/lists/*
+RUN set -eu; case "$(dpkg --print-architecture)" in \
+    arm64) file=powershell-7.6.9-linux-arm64.tar.gz; sha=02eb9991af447c7e7fe881acde195961afd397c40b8eb1c2b3856b84ec2d85f2;; \
+    amd64) file=powershell-7.6.9-linux-x64.tar.gz; sha=1da6d6d6035d651f20e70ddee7c4c15ac6ab8b9fb40ee92240d91263f28a884b;; \
+    *) exit 1;; esac; \
+    curl -fL --retry 2 "https://github.com/PowerShell/PowerShell/releases/download/v7.6.9/$file" -o /tmp/pwsh.tar.gz; \
+    echo "$sha  /tmp/pwsh.tar.gz" | sha256sum -c -; \
+    mkdir -p /opt/powershell; tar -xzf /tmp/pwsh.tar.gz -C /opt/powershell; rm /tmp/pwsh.tar.gz; chmod +x /opt/powershell/pwsh; ln -s /opt/powershell/pwsh /usr/local/bin/pwsh
+ENV POWERSHELL_TELEMETRY_OPTOUT=1 DOTNET_CLI_TELEMETRY_OPTOUT=1
+WORKDIR /work
+ENTRYPOINT ["pwsh", "-NoLogo", "-NoProfile"]

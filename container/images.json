@@ -1,0 +1,9 @@
+{
+  "reviewed": "2026-11-08",
+  "wordpress": "docker.io/library/wordpress@sha256:0bdf00b66e5e61d8aebbf089e8a244fd87c3c49edca7c187393ffd2485daa53b",
+  "wordpress_version": "7.1.4",
+  "php_branch": "8.5",
+  "database": "docker.io/library/mariadb@sha256:5670cdd45526f77299085f699becf9d31a0244316a4d39c2fb4a60fc17c80f80",
+  "database_version": "12.3.3 LTS",
+  "powershell": "7.6.9"
+}
