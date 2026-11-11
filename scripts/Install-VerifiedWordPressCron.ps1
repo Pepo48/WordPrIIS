@@ -50,13 +50,18 @@ function Set-CronRunsAcl {
     Set-Acl -LiteralPath $Path -AclObject $acl
 }
 function Get-CronConfigPlan {
-    param([string]$Php,[string]$Config,[string]$Candidate)
+    param([string]$Php,[string]$Config,[string]$Candidate,[switch]$EnableRequestCron)
+    $options=@();if($EnableRequestCron){$options+=@('--enable-request-cron')}
     $saved=$ErrorActionPreference
-    try{$ErrorActionPreference='Continue';$raw=@(& $Php '-d' 'register_argc_argv=1' '-d' 'display_errors=0' '-d' 'log_errors=0' (Join-Path $PSScriptRoot 'cron-config.php') ('--config='+$Config) ('--candidate='+$Candidate) 2>&1);$code=$LASTEXITCODE}finally{$ErrorActionPreference=$saved}
+    try{$ErrorActionPreference='Continue';$raw=@(& $Php '-d' 'register_argc_argv=1' '-d' 'display_errors=0' '-d' 'log_errors=0' (Join-Path $PSScriptRoot 'cron-config.php') ('--config='+$Config) ('--candidate='+$Candidate) @options 2>&1);$code=$LASTEXITCODE}finally{$ErrorActionPreference=$saved}
     $line=@($raw|Where-Object{[string]$_ -like 'WORDPRIIS_CRON_PLAN:*'})
     if(!$line.Count){throw 'WORDPRIIS_CRON:config-plan-no-result'}
     $plan=([string]$line[-1]).Substring('WORDPRIIS_CRON_PLAN:'.Length)|ConvertFrom-Json
-    if($code -ne 0 -or $plan.PSObject.Properties['error']){throw 'WORDPRIIS_CRON:config-layout-not-supported'}
+    if($code -ne 0 -or $plan.PSObject.Properties['error']){
+        $allowed=@('dynamic-config-not-supported','ambiguous-settings-load','complex-cron-define','ambiguous-or-unsupported-config','cron-define-after-settings','invalid-plan-paths','candidate-write-failed','config-plan-failed')
+        if($plan.PSObject.Properties['error'] -and [string]$plan.error -in $allowed){throw ('WORDPRIIS_CRON:config-'+[string]$plan.error)}
+        throw 'WORDPRIIS_CRON:config-layout-not-supported'
+    }
     $saved=$ErrorActionPreference
     try{$ErrorActionPreference='Continue';$null=@(& $Php '-d' 'display_errors=0' '-d' 'log_errors=0' '-l' $Candidate 2>&1);$code=$LASTEXITCODE}finally{$ErrorActionPreference=$saved}
     if($code -ne 0){throw 'WORDPRIIS_CRON:candidate-syntax-failed'}
@@ -144,6 +149,7 @@ function Invoke-InstallWordPrIISWordPressCron {
         $stage='protected-runtime';$null=New-Item -ItemType Directory -Path $folder;$ownedFolder=$true
         Set-ProfileAcl $folder (@($taskSid)+@($discovery.runtime_sids)) 'Read' -Directory;$secure=$true
         $report['runtime_directory']=$folder;$report['task_name']=$TaskName;$report['task_account_sid']=$taskSid;$report['site_name']=$discovery.site_name
+        $keep=Join-Path $folder 'KEEP-THIS-DIRECTORY.txt';[IO.File]::WriteAllText($keep,"PERMANENT WORDPRESS CRON RUNTIME - DO NOT DELETE.`r`nThe scheduled task and cron MU gate require this directory, including config, scripts, locks and receipts.`r`nIt contains private operational credentials/recovery material. Keep it outside web roots, preserve ACLs and back it up securely.`r`n");Set-ProfileAcl $keep $taskSid 'Read'
         foreach($name in @('Invoke-WordPrIISCronTask.ps1','Invoke-WordPrIISBootstrapProfile.ps1','Invoke-WordPrIISServerAudit.ps1')){
             $path=Join-Path $folder $name;[IO.File]::WriteAllBytes($path,[IO.File]::ReadAllBytes((Join-Path $PSScriptRoot $name)));Set-ProfileAcl $path $taskSid 'Read'
         }
@@ -243,6 +249,7 @@ function Invoke-InstallWordPrIISWordPressCron {
             if((!$report.cleanup.canary_removed -or !$report.cleanup.verification_token_removed -or !$report.cleanup.canary_proof_access_removed -or !$report.cleanup.probe_events_removed) -and $report.status -ne 'rollback-incomplete'){$report.status='cleanup-incomplete'}
             Write-CronJson (Join-Path $folder 'install-report.json') $report
             Write-Host ('Report retained: '+(Join-Path $folder 'install-report.json'))
+            if($success -or $retainTask){Write-Warning ('PERMANENT CRON RUNTIME - KEEP THIS DIRECTORY: '+$folder+'. The scheduled task and MU gate depend on it.')}
         }elseif($ownedFolder){try{if(@(Get-ChildItem -LiteralPath $folder -Force).Count -eq 0){[IO.Directory]::Delete($folder)}}catch{}}
         if(!$secure){Write-Warning ('Cron setup stopped before a private report was created. Stage: '+$stage+'; code: '+$report.diagnostic.code)}
         $token=$null

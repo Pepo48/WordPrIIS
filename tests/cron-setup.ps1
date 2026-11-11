@@ -85,6 +85,14 @@ try{
  $saved=[IO.File]::ReadAllText((Join-Path $RuntimeDirectory 'install-report.json'))
  $result=Invoke-InstallWordPrIISWordPressCron
  Assert-Cron ([IO.File]::ReadAllText((Join-Path $RuntimeDirectory 'install-report.json')) -eq $saved) 'existing report directory untouched on refusal'
+ # Permanent runtime cannot be mistaken for a disposable profile report.
+ $marker=Join-Path (Join-Path $fixture 'success') 'KEEP-THIS-DIRECTORY.txt'
+ Assert-Cron ((Test-Path $marker) -and [IO.File]::ReadAllText($marker).Contains('PERMANENT')) 'permanent runtime marker retained'
+ . (Join-Path $PSScriptRoot '../scripts/Install-Cron.ps1')
+ $runtimeConfig=@{PrivatePath=$fixture;Url='https://wordpress.example.com'}
+ $stable=Get-WordPrIISCronRuntime $runtimeConfig
+ Assert-Cron ($stable -eq (Get-WordPrIISCronRuntime $runtimeConfig) -and (Split-Path $stable -Leaf).StartsWith('Permanent-WordPressCron-')) 'default runtime name is stable and explicitly permanent'
+ Assert-Cron (!(Test-Path $stable)) 'runtime path calculation creates no folder'
  # Atomic config publication refuses a stale expected hash.
  $candidate=Join-Path $fixture 'candidate';[IO.File]::WriteAllText($candidate,'NEW')
  $failed=$false;try{Publish-CronConfig $candidate $config ('0'*64)}catch{$failed=$true}
