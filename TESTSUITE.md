@@ -33,6 +33,7 @@ Results: ignored `.artifacts/powershell-tests.log`, `https-tests.log`, `php-test
 | `tests/cron-config.php` | Tokenized config planning, byte preservation, dynamic/conditional/duplicate definition refusal. |
 | `tests/cron-gate.php` | Native PHP child processes: flock non-overlap, fatal handling, independent completion receipts and ordinary-page exclusion. |
 | `tests/cron-setup.ps1` | Real file/atomic config transaction with mocked Windows APIs: manual/automatic/post-change/normal proof ordering, rollback, concurrent edits and task retention if effective rollback is unverified. |
+| `tests/cron-recovery.ps1` | Missing-runtime association, ambiguous/unrelated target refusal, password prompting, private backups, visitor-cron restoration and verify-before-unregister ordering; native boundaries mocked. |
 | `tests/cron-proof.ps1` / `cron-task-definition.ps1` | Exact receipt matching, credentials checked by SID, limited password logon, matching trigger/action limits and no password/policy bypass in action arguments. |
 | `tests/cron-task-http.py` | Real task action against early-200 HTTPS with delayed/missing/fatal/busy completion receipts and expired verification state. |
 | `tests/cron-stage.py` | Actual WordPress due canary callbacks and completion/cleanup in local stage. The stage already has DISABLE_WP_CRON=true; it does not test switching the stage's config. |
@@ -45,6 +46,7 @@ pwsh -NoProfile -File .\tests\bootstrap.ps1
 pwsh -NoProfile -File .\tests\server-audit.ps1
 pwsh -NoProfile -File .\tests\bootstrap-profile-runner.ps1
 pwsh -NoProfile -File .\tests\cron-setup.ps1
+pwsh -NoProfile -File .\tests\cron-recovery.ps1
 pwsh -NoProfile -File .\tests\cron-proof.ps1
 pwsh -NoProfile -File .\tests\cron-task-definition.ps1
 ```
@@ -64,7 +66,7 @@ GitHub Actions workflows are not shipped. Run the portable Windows checks locall
 
 ```powershell
 foreach ($exe in @('powershell.exe', 'pwsh.exe')) {
-    foreach ($test in @('core', 'bootstrap', 'server-audit', 'bootstrap-profile-runner', 'cron-setup', 'cron-proof', 'cron-task-definition')) {
+    foreach ($test in @('core', 'bootstrap', 'server-audit', 'bootstrap-profile-runner', 'cron-setup', 'cron-recovery', 'cron-proof', 'cron-task-definition')) {
         & $exe -NoProfile -File (Join-Path $PWD ("tests/$test.ps1"))
         if ($LASTEXITCODE -ne 0) { throw "Failed: $exe / $test" }
     }

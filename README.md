@@ -77,7 +77,7 @@ $credential = Get-Credential -UserName $account -Message 'Existing cron service 
 .\wordpress-iis.ps1 -Action Cron -ConfigPath $cfg -TaskCredential $credential
 ```
 
-The service account must already exist and be allowed scheduled batch logon. It need not be the IIS worker identity. The installer verifies due callbacks through manual and automatic task runs, confirms DISABLE_WP_CRON in web PHP, clears its temporary canary and tests a normal run. The permanent cron-only lock/completion bridge covers wp-cron.php’s early HTTP 200 behavior. Keep the private runtime directory and bridge. Existing tasks/gates are never overwritten. [Cron lifecycle and recovery](docs/windows-cron.md).
+The service account must already exist and be allowed scheduled batch logon. It need not be the IIS worker identity. The installer verifies due callbacks through manual and automatic task runs, confirms DISABLE_WP_CRON in web PHP, clears its temporary canary and tests a normal run. The permanent cron-only lock/completion bridge covers wp-cron.php’s early HTTP 200 behavior. Keep the private runtime directory and bridge. New wrapper installations use a stable `Permanent-WordPressCron-<site-hash>` directory and create `KEEP-THIS-DIRECTORY.txt`; it is not disposable audit output. A missing directory can prevent the task from starting even while its schedule remains visible. See [missing-runtime recovery](docs/cron-recovery.md). Existing tasks/gates are never overwritten. [Cron lifecycle and recovery](docs/windows-cron.md).
 
 ## Fresh Windows bootstrap
 
@@ -118,3 +118,7 @@ The [final retention/privacy review](docs/verification-results/final-retention-r
 - `docs/`: native runbooks, concise findings/verification summaries, limitations and migration history. Raw production reports, callback dumps and ETLs remain private and untracked.
 
 The previous installer and tests are available in Git history. Old `-NonInteractive` commands and imperative module imports are not supported. This is a deliberate interface change; the previous tests often simulated installation rather than calling real functions. [Migration notes](docs/migration.md), [changelog](CHANGELOG.md).
+
+### Recover a deleted cron runtime
+
+From the complete toolkit in elevated Windows PowerShell, run `.\scripts\Recover-WordPressCron.ps1`. It detects the old task/site, requests the existing service-account password, backs up configuration and the matching gate, restores visitor cron, and verifies a replacement before disabling visitor cron again. Keep the new `Permanent-WordPressCron-Recovered-*` folder. See [recovery and failure handling](docs/cron-recovery.md), including read-only config diagnostics. Standard installer output after the ABSPATH guard is supported on recovery/reinstallation.

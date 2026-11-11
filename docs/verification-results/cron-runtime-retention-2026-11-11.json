@@ -1,0 +1,31 @@
+{
+  "date": "2026-11-11",
+  "portable_cron_assertions": 70,
+  "powershell_container_version": "7.6.9",
+  "quality": "passed",
+  "runtime_changes": [
+    "Stable permanent cron directory naming",
+    "KEEP-THIS-DIRECTORY.txt marker",
+    "Explicit retained-runtime warning"
+  ],
+  "recovery_guide": "Single-command recovery using bundled helpers; native APIs mocked in portable tests",
+  "native_windows_recovery": "Operator-reported success on 2026-11-11; installer completed manual and automatic canaries, post-config verification and verified replacement",
+  "automatic_logged_out_execution": "requires native verification",
+  "privacy": "No detailed production reports or customer configuration retained",
+  "portable_recovery_assertions": 50,
+  "config_planner_assertions": 29,
+  "recovery_entry_point": "scripts/Recover-WordPressCron.ps1",
+  "discovery_regressions": [
+    "HTTPS named binding",
+    "Explicit public HTTPS with matching HTTP origin",
+    "Explicit site for unnamed binding",
+    "Hostname/application mismatch refusal",
+    "Read-only secret-free counts"
+  ],
+  "planner_regressions": [
+    "Installer output following standard ABSPATH closing brace can be recovered and reinstalled byte-preservingly",
+    "Read-only diagnostic returns fixed metadata and no config contents or paths",
+    "Conditional, dynamic and duplicate definitions still refused"
+  ],
+  "native_evidence_scope": "Observed operator console transcript only; no private production reports, paths, task IDs or credentials retained"
+}

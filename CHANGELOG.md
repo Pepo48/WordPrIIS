@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased — 2026-11-11
+
+- Record operator-reported native recovery success after manual/automatic canaries and post-config verification. Keep deployment identifiers and detailed logs private; retain logged-out execution and individual plugin jobs as pending checks.
+
+- Fix config planning on recovery/reinstall when the installer placed the cron definition immediately after the standard ABSPATH guard. Add byte-preserving round-trip regressions, read-only secret-free PHP diagnostics and allowlisted planner reasons instead of a generic layout failure. Keep conditional/dynamic/duplicate definitions refused.
+
+- Explain cron recovery discovery failures with secret-free counts and a read-only Diagnose mode. Support explicit public HTTPS URLs for matching HTTP origin bindings and explicit site selection for unnamed bindings; deduplicate identical site routes and retain ambiguity refusal. Add binding and no-mutation diagnostics regressions.
+
+- Add single-command missing cron runtime recovery with IIS/task/gate association, service-account password prompt, private backups, atomic visitor-cron restoration and verified replacement before disabling request cron. Refuse ambiguity and retain failure evidence. Add portable recovery and bidirectional config-planning regressions.
+
+- Make cron runtime permanence explicit: stable per-site wrapper directory names, a KEEP-THIS-DIRECTORY marker and a retained-runtime console warning. Document recovery from a deleted runtime and the distinction between scheduler launch failure and account logout; existing installations are not moved or modified automatically.
+
 ## Unreleased — 2026-11-08
 
 - Complete the final retention/privacy/reference review: keep raw diagnostics ignored, clarify dated verification summaries, remove obsolete publication flags and align runbooks with the final tool layout.
